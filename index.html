@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/logo.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SmolLM2 WebGPU + Spreadsheet</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@400&display=swap" />
+    <style>
+      .chat-shell {
+        width: 25%;
+        height: 100%;
+        padding: 16px;
+        background: rgba(243, 241, 236, 0.72);
+        border-right: 1px solid rgba(255, 255, 255, 0.35);
+        box-shadow:
+          0 0 16px rgba(255, 255, 255, 0.35),
+          10px 0 24px rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(14px) saturate(140%);
+        -webkit-backdrop-filter: blur(14px) saturate(140%);
+      }
+
+      .chat-shell > #chat-root {
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+      }
+    </style>
+  </head>
+
+  <body class="m-0 p-0">
+    <!-- flex container for 1/4 chat, 3/4 pulse -->
+    <div class="flex h-screen">
+      <!-- Chat UI mounts here, takes up 1/4 -->
+      <div class="chat-shell">
+        <div id="chat-root"></div>
+      </div>
+
+      <!-- Pulse UI iframe, takes up 3/4 -->
+      <iframe
+        id="pulse"
+        class="w-3/4 h-full border-0"
+        src="/Pulse.html"
+        title="Pulse"
+      ></iframe>
+    </div>
+
+    <!-- your existing scripts -->
+    <script
+      id="MathJax-script"
+      src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
+    ></script>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
