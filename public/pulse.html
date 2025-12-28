@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pulse Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:wght@300;400;600&display=swap" />
+  <style>
+    :root {
+      --bg: #f0eee9;
+      --card: #ffffff;
+      --border: rgba(0,0,0,0.08);
+      --text: #141820;
+      --muted: #606a7b;
+      --accent: #2a7be4;
+      --good: #0f9d58;
+      --warn: #f7b731;
+      --bad: #e64c5b;
+      --pulse: #5fb3ff;
+      --shadow: 0 14px 30px rgba(0,0,0,0.12);
+      --radius: 18px;
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      font-family:"Manrope", system-ui, -apple-system, sans-serif;
+      background:var(--bg);
+      color:var(--text);
+      min-height:100vh;
+      padding:40px 0 60px;
+    }
+    :root{
+      --beds-height: 360px;
+      --glass: rgba(255,255,255,0.72);
+      --glass-border: rgba(255,255,255,0.5);
+      --glass-shadow: 0 22px 50px rgba(0,0,0,0.16);
+    }
+    .app{ width:100%; margin:0 auto; display:flex; flex-direction:column; gap:28px; padding:0 16px; }
+    .topbar{
+      position:relative;
+      overflow:hidden;
+      display:flex; flex-direction:column; gap:12px;
+      background:rgba(255,255,255,0.38);
+      border:1px solid rgba(255,255,255,0.32);
+      border-radius:22px;
+      padding:18px 20px;
+      box-shadow:0 22px 60px rgba(0,0,0,0.18);
+      backdrop-filter: blur(22px) saturate(1.7);
+      width:100%;
+      margin:0;
+    }
+    .top-row{ display:flex; justify-content:space-between; align-items:center; gap:12px; }
+    .brand{ display:flex; align-items:center; gap:10px; }
+    .brand h1{ margin:0; font-size:28px; letter-spacing:0.2px; font-weight:700; }
+    .status{ display:flex; align-items:center; gap:10px; }
+    .pill{ display:inline-flex; align-items:center; gap:8px; padding:8px 12px; border-radius:999px; border:1px solid rgba(255,255,255,0.35); background:rgba(255,255,255,0.28); color:var(--muted); font-size:13px; backdrop-filter: blur(12px) saturate(1.3); box-shadow:0 10px 30px rgba(0,0,0,0.12); }
+    .dot{ width:9px; height:9px; border-radius:999px; background:var(--good); box-shadow:0 0 0 3px rgba(15,157,88,0.12); }
+    .dot.warn{ background:var(--warn); box-shadow:0 0 0 3px rgba(247,183,49,0.14); }
+    .dot.bad{ background:var(--bad); box-shadow:0 0 0 3px rgba(230,76,91,0.16); }
+    .btn{ display:inline-flex; align-items:center; gap:10px; padding:11px 14px; border-radius:12px; border:1px solid var(--border); background:var(--card); color:var(--text); cursor:pointer; font-weight:700; font-size:14px; transition:transform .08s ease, background .15s ease; }
+    .btn:hover{ background:#f7f7f4; }
+    .btn:active{ transform:translateY(1px); }
+    .btn[disabled]{ opacity:.5; cursor:not-allowed; }
+    .monitor-strip{ display:grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); gap:12px; }
+    .section-toggle{ border:1px solid rgba(255,255,255,0.35); border-radius:14px; background:rgba(255,255,255,0.55); box-shadow:0 10px 22px rgba(0,0,0,0.12); overflow:hidden; backdrop-filter: blur(16px) saturate(1.4); }
+    .section-toggle summary{ cursor:pointer; display:flex; justify-content:space-between; align-items:center; padding:12px 14px; list-style:none; font-weight:700; }
+    .section-toggle summary::-webkit-details-marker{ display:none; }
+    .chevron{ transition:transform .18s ease; }
+    details[open] .chevron{ transform:rotate(180deg); }
+    .card{ position:relative; border:1px solid var(--border); border-radius:16px; background:var(--card); padding:12px; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.7), inset 0 8px 24px rgba(0,0,0,0.08); overflow:hidden; }
+    .card.mon-1{ --accent: #9bc7ff; }
+    .card.mon-2{ --accent: #c8b3ff; }
+    .card.mon-3{ --accent: #a7e3c4; }
+    .card.mon-4{ --accent: #f6c194; }
+    .card::before{ content:""; position:absolute; inset:0; pointer-events:none; opacity:0.05; background: radial-gradient(220px 80px at 25% 0%, var(--accent), transparent 50%); }
+    .card-head{ display:flex; justify-content:space-between; align-items:flex-start; gap:10px; position:relative; z-index:1; margin-bottom:8px; }
+    .mon-tag{ display:inline-flex; padding:6px 10px; border-radius:12px; border:1px solid rgba(255,255,255,0.6); background:color-mix(in srgb, var(--accent) 18%, #ffffff 82%); font-size:12px; font-weight:700; color:color-mix(in srgb, var(--accent) 55%, #2b3550 45%); box-shadow: inset 0 1px 6px rgba(255,255,255,0.65); backdrop-filter: blur(10px) saturate(1.4); }
+    .pid{ font-weight:800; letter-spacing:0.3px; }
+    .updated{ font-size:12px; color:var(--muted); }
+    .vitals{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; position:relative; z-index:1; }
+    .metric{ border:1px solid var(--border); border-radius:12px; padding:10px 10px 9px; background:rgba(0,0,0,0.02); display:grid; grid-template-columns:auto auto; grid-template-rows:auto auto; gap:4px 6px; align-items:center; min-height:68px; }
+    .metric .k{ font-size:11px; color:var(--muted); letter-spacing:0.3px; display:flex; align-items:center; gap:6px; }
+    .metric .trend{ justify-self:end; font-size:12px; font-weight:700; }
+    .metric .v{ grid-column:span 2; font-size:20px; font-weight:800; letter-spacing:0.2px; }
+    .trend.up{ color:var(--bad); }
+    .trend.down{ color:var(--good); }
+    .trend.flat{ color:var(--muted); }
+    .status-row{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; position:relative; z-index:1; margin-top:8px; font-size:12px; color:var(--muted); }
+    .status-dot{ width:8px; height:8px; border-radius:999px; background:var(--good); box-shadow:0 0 0 3px rgba(15,157,88,0.12); }
+    .status-dot.bad{ background:var(--bad); box-shadow:0 0 0 3px rgba(230,76,91,0.18); }
+    .beds-full{ margin:24px 0 0; width:100%; padding:0 12px; }
+    .beds-stack{ display:grid; grid-template-columns: 827fr 319fr 328fr 327fr; gap:12px; align-items:stretch; grid-auto-rows:var(--beds-height); }
+    .beds-full img{ width:100%; height:100%; display:block; object-fit:cover; border-radius:14px; box-shadow:none; }
+    .beds-full img.monitors-img{ object-position:40% center; }
+    /* Team strip */
+    .team-strip{ display:flex; gap:12px; flex-wrap:wrap; justify-content:center; padding:18px 10px 6px; }
+    .team-card{ width:168px; background:transparent; border:none; border-radius:0; padding:0; box-shadow:none; }
+    .team-card img{ width:100%; border-radius:0; display:block; box-shadow:none; }
+    /* Modal glass */
+    .modal-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,0.25); display:none; align-items:center; justify-content:center; padding:16px; z-index:20; backdrop-filter: blur(7px); }
+    .modal{ width:min(640px, 100%); background:rgba(255,255,255,0.7); border-radius:20px; border:1px solid rgba(255,255,255,0.5); box-shadow:0 28px 64px rgba(0,0,0,0.22); padding:22px; display:flex; flex-direction:column; gap:14px; backdrop-filter: blur(18px) saturate(1.5); }
+    .modal h3{ margin:0; font-size:19px; font-weight:700; }
+    .field{ display:flex; flex-direction:column; gap:8px; font-size:15px; }
+    .field label{ font-size:13px; color:#111; display:flex; align-items:center; gap:6px; font-weight:700; }
+    .field input{ width:100%; padding:12px 14px; border-radius:12px; border:1px solid rgba(0,0,0,0.14); background:rgba(255,255,255,0.9); font:inherit; color:var(--text); box-shadow: inset 0 1px 2px rgba(0,0,0,0.04); }
+    .field .hint{ font-size:12px; color:var(--muted); }
+    .modal-actions{ display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap; }
+
+    /* Bed wizard */
+    .bed-modal-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,0.35); display:none; align-items:center; justify-content:center; padding:30px; z-index:30; backdrop-filter: blur(10px); }
+    .bed-modal{ position:relative; width:min(1420px, 98vw); min-height:700px; max-height:90vh; background:#fff center/cover no-repeat; border-radius:32px; border:1px solid rgba(255,255,255,0.6); overflow:auto; box-shadow:0 36px 90px rgba(0,0,0,0.3); display:flex; flex-direction:column; }
+    .bed-modal::after{ content:""; position:absolute; inset:0; background:linear-gradient(135deg, rgba(255,255,255,0.28), rgba(255,255,255,0.14) 40%, rgba(255,255,255,0.32)); pointer-events:none; }
+    .bed-modal-inner{ position:relative; display:grid; grid-template-columns:420px 1fr; grid-template-rows:auto auto auto minmax(320px,1fr); grid-template-areas:
+      "patient vitals"
+      "time    vitals"
+      "clinical vitals"
+      "care    model";
+      gap:16px; padding:26px; align-items:start; flex:1; }
+    .shell{ background:var(--glass); border:1px solid var(--glass-border); border-radius:20px; padding:16px 18px; box-shadow:var(--glass-shadow); backdrop-filter: blur(18px) saturate(1.5); }
+    .patient-card{ grid-area:patient; display:flex; align-items:center; gap:14px; }
+    .time-card{ grid-area:time; }
+    .clinical-card{ grid-area:clinical; }
+    .vitals-card{ grid-area:vitals; display:grid; gap:14px; }
+    .care-card{ grid-area:care; min-height:320px; display:flex; flex-direction:column; justify-content:center; }
+    .model-card{ grid-area:model; min-height:320px; display:flex; align-items:center; justify-content:center; font-weight:850; color:var(--muted); border-style:dashed; border-color:rgba(0,0,0,0.08); border-width:1px; letter-spacing:0.2px; position:relative; }
+    .prediction-badge{ position:absolute; top:16px; left:16px; background:rgba(255,255,255,0.9); border:1px solid rgba(0,0,0,0.06); border-radius:12px; padding:10px 14px; font-weight:900; color:var(--text); box-shadow:0 12px 24px rgba(0,0,0,0.14); display:flex; align-items:center; gap:8px; }
+    .prediction-badge .material-symbols-rounded{ font-size:20px; }
+    .bed-icon{ width:118px; height:118px; border-radius:999px; display:flex; align-items:center; justify-content:center; background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.95), rgba(255,255,255,0.7)); border:1px solid rgba(255,255,255,0.55); box-shadow:0 18px 34px rgba(0,0,0,0.18); }
+    .bed-icon img{ width:86%; height:86%; object-fit:contain; opacity:0.98; }
+    .wizard-meta{ display:flex; flex-direction:column; gap:6px; color:var(--muted); font-weight:600; font-size:16px; }
+    .wizard-meta strong{ color:var(--text); font-size:22px; font-weight:800; }
+    .section-title{ font-size:18px; font-weight:800; display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+    .section-title .material-symbols-rounded{ font-size:22px; }
+    .info-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(160px,1fr)); gap:8px; }
+    .info-label{ font-size:13px; font-weight:700; color:var(--muted); }
+    .info-value{ font-size:18px; font-weight:800; }
+    .vitals-panel{ display:grid; grid-template-columns:repeat(2,minmax(260px,1fr)); gap:14px; }
+    .vital-tile{ background:rgba(255,255,255,0.9); border:1px solid rgba(0,0,0,0.05); border-radius:20px; padding:16px; box-shadow:0 20px 36px rgba(0,0,0,0.16); display:grid; gap:10px; }
+    .vital-tile .k{ font-size:15px; color:var(--muted); display:flex; align-items:center; gap:8px; letter-spacing:0.2px; font-weight:800; text-transform:uppercase; }
+    .vital-tile .v{ font-size:34px; font-weight:900; letter-spacing:0.3px; }
+    .vital-tile .trend{ font-size:13px; font-weight:700; color:var(--muted); display:flex; align-items:center; gap:6px; letter-spacing:0.2px; }
+    .care-row{ display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:10px; margin-top:6px; }
+    .doctor-card{ position:relative; cursor:pointer; }
+    .doctor-card .label{ position:absolute; inset:auto 8px 8px 8px; background:rgba(0,0,0,0.55); color:#fff; padding:6px 8px; border-radius:10px; font-weight:800; font-size:12px; text-align:center; }
+    .doctor-card.selected{ outline:3px solid var(--accent); outline-offset:4px; border-radius:6px; }
+    .close-pill{ position:sticky; top:12px; right:12px; margin-left:auto; align-self:flex-end; width:46px; height:46px; border-radius:999px; border:1px solid rgba(0,0,0,0.1); background:rgba(255,255,255,0.95); display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 16px 30px rgba(0,0,0,0.2); z-index:2; }
+    .close-pill:hover{ background:#fff; }
+
+    @media(max-width:720px){
+      .top-row{ flex-direction:column; align-items:flex-start; }
+      .vitals{ grid-template-columns:1fr; }
+      :root{ --beds-height: 230px; }
+      .beds-stack{ grid-template-columns:repeat(2, minmax(0,1fr)); }
+      .bed-modal-inner{ grid-template-columns:1fr; }
+      .close-pill{ position:absolute; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="topbar">
+    <div class="top-row">
+      <div class="brand">
+        <span class="material-symbols-rounded" style="font-size:30px; color:var(--pulse);">monitor_heart</span>
+        <h1>Pulse Platform</h1>
+      </div>
+        <div class="status">
+          <div class="pill" id="connPill"><span class="dot bad" id="connDot"></span><span id="connText">Disconnected</span></div>
+          <button class="btn" id="settingsBtn" title="Settings"><span class="material-symbols-rounded">settings</span></button>
+        </div>
+      </div>
+      <details class="section-toggle" open>
+        <summary>
+          <span style="display:flex; align-items:center; gap:8px; font-weight:700;">Patient Waiting Area</span>
+          <span class="chevron material-symbols-rounded">expand_more</span>
+        </summary>
+        <div class="monitor-strip" id="strip"></div>
+      </details>
+    </div>
+
+  </div>
+
+  <div class="beds-full">
+    <div class="beds-stack">
+      <img src="Monitors.png" alt="Monitors" class="monitors-img" />
+      <img src="Bed1.png" alt="Bed 1" id="bed1Tile" style="cursor:pointer;" />
+      <img src="Bed2.png" alt="Bed 2" id="bed2Tile" style="cursor:pointer;" />
+      <img src="Bed3.png" alt="Bed 3" id="bed3Tile" style="cursor:pointer;" />
+    </div>
+  </div>
+
+  <div class="team-strip" id="doctorStrip"></div>
+  <div id="bed-snapshot" style="display:none;"></div>
+
+  <div class="modal-backdrop" id="modal">
+    <div class="modal">
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+        <h3>Connection</h3>
+        <button class="btn" id="closeModal" title="Close"><span class="material-symbols-rounded">close</span></button>
+      </div>
+      <div class="field">
+        <label><span class="material-symbols-rounded" style="font-size:18px;">podcasts</span> Broker (WebSocket)</label>
+        <input id="brokerUrl" type="text" value="wss://broker.hivemq.com:8884/mqtt" />
+      </div>
+      <div class="field">
+        <label><span class="material-symbols-rounded" style="font-size:18px;">subscriptions</span> Topic</label>
+        <input id="topic" type="text" value="spotcheck/+/vitals" />
+        <div class="hint">Payload: {patient_id, hr, spo2, sbp, rr, ts?, note?}</div>
+      </div>
+      <div class="field">
+        <label><span class="material-symbols-rounded" style="font-size:18px;">badge</span> Client ID</label>
+        <input id="clientId" type="text" />
+      </div>
+      <div class="modal-actions">
+        <button class="btn" id="clearBtn">Clear data</button>
+        <button class="btn" id="disconnectBtn" disabled>Disconnect</button>
+        <button class="btn primary" id="connectBtn">Connect</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="bed-modal-backdrop" id="bedModal">
+    <div class="bed-modal" id="bedModalPane">
+      <button class="close-pill" id="closeBedModal"><span class="material-symbols-rounded">close</span></button>
+      <div class="bed-modal-inner">
+        <div class="shell patient-card">
+          <div class="bed-icon"><img id="bedIconImg" src="Bed1-Icon.png" alt="Bed icon"></div>
+          <div class="wizard-meta">
+            <strong id="bedPatientName">(vacant) • Bed 1</strong>
+            <div id="bedPatientId">Patient ID: —</div>
+            <div id="bedPatientGender">Gender: —</div>
+            <div id="bedPatientAge">Age: —</div>
+          </div>
+        </div>
+
+        <div class="shell" style="grid-column: span 2;">
+          <div class="section-title"><span class="material-symbols-rounded">assignment_ind</span> Bed Planning</div>
+          <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center;">
+            <label style="font-size:13px; color:var(--muted); display:flex; gap:6px; align-items:center;">
+              <span class="material-symbols-rounded" style="font-size:18px;">patient_list</span>
+              Patient
+              <select id="patientSelect" style="margin-left:6px; padding:10px 12px; border-radius:12px; border:1px solid rgba(0,0,0,0.12); background:rgba(255,255,255,0.9); font:inherit;">
+                <option value="">Select patient</option>
+              </select>
+            </label>
+            <button class="btn" id="assignSelected"><span class="material-symbols-rounded">assignment_turned_in</span>Assign to Bed 1</button>
+            <span style="font-size:12px; color:var(--muted);">Select a live patient from monitors to dispatch into Bed 1.</span>
+          </div>
+        </div>
+
+        <div class="shell time-card">
+          <div class="section-title"><span class="material-symbols-rounded">history</span> Time in Bed</div>
+          <div class="info-grid">
+            <div>
+              <div class="info-label">Assignment Date and Time</div>
+              <div class="info-value" id="bedTimeIn">—</div>
+            </div>
+            <div>
+              <div class="info-label">Total time</div>
+              <div class="info-value" id="bedTimeTotal">—</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="shell clinical-card">
+          <div class="section-title"><span class="material-symbols-rounded">health_and_safety</span> Clinical</div>
+          <div class="info-grid">
+            <div>
+              <div class="info-label">Primary complaint</div>
+              <div class="info-value" id="bedComplaint">—</div>
+            </div>
+            <div>
+              <div class="info-label">Diagnosis</div>
+              <div class="info-value" id="bedDiagnosis">—</div>
+            </div>
+            <div>
+              <div class="info-label">Pain present?</div>
+              <div class="info-value" id="bedPain">—</div>
+            </div>
+            <div>
+              <div class="info-label">Injury present?</div>
+              <div class="info-value" id="bedInjury">—</div>
+            </div>
+            <div>
+              <div class="info-label">Oxygen support</div>
+              <div class="info-value" id="bedOxygen">—</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="shell vitals-card">
+          <div class="section-title"><span class="material-symbols-rounded">monitor_heart</span> Vitals</div>
+          <div class="vitals-panel" id="bedVitals"></div>
+        </div>
+
+        <div class="shell care-card">
+          <div class="section-title"><span class="material-symbols-rounded">group</span> Care Context</div>
+          <div class="care-row">
+            <div>
+              <div class="info-label">Assigned nurse</div>
+              <div class="info-value" id="bedNurse">—</div>
+            </div>
+            <div>
+              <div class="info-label">Assigned doctor</div>
+              <div class="info-value" id="bedDoctor">—</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="shell model-card" id="modelFrame">
+          <div class="prediction-badge" id="bedPrediction"><span class="material-symbols-rounded">psychology</span><span id="bedPredictionText">Waiting for model...</span></div>
+          <div>Embed trained model here (realtime vitals input)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+  <script>
+    const stripEl = document.getElementById("strip");
+    const topbarEl = document.querySelector(".topbar");
+    const connText = document.getElementById("connText");
+    const connDot = document.getElementById("connDot");
+    const brokerInput = document.getElementById("brokerUrl");
+    const topicInput = document.getElementById("topic");
+    const clientInput = document.getElementById("clientId");
+    const connectBtn = document.getElementById("connectBtn");
+    const disconnectBtn = document.getElementById("disconnectBtn");
+    const clearBtn = document.getElementById("clearBtn");
+    const modal = document.getElementById("modal");
+    const settingsBtn = document.getElementById("settingsBtn");
+    const closeModal = document.getElementById("closeModal");
+    const bedModal = document.getElementById("bedModal");
+    const closeBedModal = document.getElementById("closeBedModal");
+    const bedVitalsEl = document.getElementById("bedVitals");
+    const bedPatientNameEl = document.getElementById("bedPatientName");
+    const bedPatientIdEl = document.getElementById("bedPatientId");
+    const bedPatientGenderEl = document.getElementById("bedPatientGender");
+    const bedPatientAgeEl = document.getElementById("bedPatientAge");
+    const bedComplaintEl = document.getElementById("bedComplaint");
+    const bedDiagnosisEl = document.getElementById("bedDiagnosis");
+    const bedPainEl = document.getElementById("bedPain");
+    const bedInjuryEl = document.getElementById("bedInjury");
+    const bedOxygenEl = document.getElementById("bedOxygen");
+    const bedTimeInEl = document.getElementById("bedTimeIn");
+    const bedTimeTotalEl = document.getElementById("bedTimeTotal");
+    const bedNurseEl = document.getElementById("bedNurse");
+    const bedDoctorEl = document.getElementById("bedDoctor");
+    const bedIconImg = document.getElementById("bedIconImg");
+    const bed1Tile = document.getElementById("bed1Tile");
+    const bed2Tile = document.getElementById("bed2Tile");
+    const bed3Tile = document.getElementById("bed3Tile");
+    const bedModalPane = document.getElementById("bedModalPane");
+    let selectedBed = "bed1";
+    const doctorStrip = document.getElementById("doctorStrip");
+    const bedPredictionText = document.getElementById("bedPredictionText");
+
+    let client = null;
+    let manualDisconnect = false;
+    const slots = new Array(4).fill(null);
+    const patients = new Map();
+    const assignmentMap = new Map(); // patient_id -> first seen timestamp
+    const bedAssignmentMap = new Map(); // bed -> assigned timestamp
+    const beds = ["bed1","bed2","bed3"];
+    const bedConfig = {
+      bed1: {
+        patientId: null,
+        name: "(vacant)",
+        age: null,
+        gender: null,
+        complaint: null,
+        diagnosis: null,
+        nurse: "Nurse Team A",
+        doctor: "Select doctor",
+        pain: null,
+        injury: null,
+        oxygenSupport: null,
+        temperature: null,
+        assigned: false,
+        prediction: "Waiting for model...",
+        background: "Bed1_Background.png",
+        icon: "Bed1-Icon.png",
+        label: "Bed 1"
+      },
+      bed2: {
+        patientId: null,
+        name: "(vacant)",
+        age: null,
+        gender: null,
+        complaint: null,
+        diagnosis: null,
+        nurse: "Nurse Team B",
+        doctor: "Select doctor",
+        pain: null,
+        injury: null,
+        oxygenSupport: null,
+        temperature: null,
+        assigned: false,
+        prediction: "Waiting for model...",
+        background: "Bed2_Background.png",
+        icon: "Bed2-Icon.png",
+        label: "Bed 2"
+      },
+      bed3: {
+        patientId: null,
+        name: "(vacant)",
+        age: null,
+        gender: null,
+        complaint: null,
+        diagnosis: null,
+        nurse: "Nurse Team C",
+        doctor: "Select doctor",
+        pain: null,
+        injury: null,
+        oxygenSupport: null,
+        temperature: null,
+        assigned: false,
+        prediction: "Waiting for model...",
+        background: "Bed3_Background.png",
+        icon: "Bed3-Icon.png",
+        label: "Bed 3"
+      }
+    };
+    const defaultIds = [];
+    const oxygenModes = ["Room Air","Nasal Cannula","Mask","Non-rebreather","Bag-valve-mask","Ventilated"];
+    const metricIcons = { HR:"favorite", "SPO₂":"bloodtype", SBP:"monitor_heart", RR:"air", BP:"monitor_heart", Temp:"device_thermostat" };
+    const doctorRoster = [
+      {name:"Drake", img:"Dr_Drake_Ramoray.png", role:"Doctor"},
+      {name:"Mina", img:"Dr_Drake_Ramoray.png", role:"Doctor"},
+      {name:"Salma", img:"Dr_Drake_Ramoray.png", role:"Nurse"},
+      {name:"Karim", img:"Dr_Drake_Ramoray.png", role:"Nurse"},
+      {name:"Rania", img:"Dr_Drake_Ramoray.png", role:"Nurse"},
+      {name:"Omar", img:"Dr_Drake_Ramoray.png", role:"Nurse"},
+    ];
+    let selectedDoctor = doctorRoster[0].name;
+    let availablePatients = [];
+    let gradioClientPromise = null;
+    const lastPredictionTs = { bed1:0, bed2:0, bed3:0 };
+    const TRIAGE_SPACE = "mernasameh5/emergency_triage";
+    const TRIAGE_ENDPOINT = "/predict_triage";
+    const PREDICT_INTERVAL_MS = 5000;
+
+    function randomId(){ return "sc-" + Math.random().toString(16).slice(2,7); }
+    function ago(ts){ if(!ts) return "idle"; const s=Math.max(0,Math.round((Date.now()-ts)/1000)); if(s<60) return `updated ${s}s ago`; const m=Math.floor(s/60); return `updated ${m}m ago`; }
+    function computeTrend(pid){
+      const p=patients.get(pid);
+      const h=p.history;
+      const n=h.length;
+      if(n<2) return {hr:"flat",spo2:"flat",sbp:"flat",rr:"flat",temp:"flat"};
+      const a=h[n-2], b=h[n-1];
+      const dir=(d,hw=true)=>{ if(!Number.isFinite(d) || Math.abs(d)<0.4) return "flat"; return hw ? (d>0?"up":"down") : (d<0?"up":"down"); };
+      const delta=(key)=> (Number.isFinite(b[key]) && Number.isFinite(a[key])) ? b[key]-a[key] : 0;
+      return { hr:dir(delta("hr"),true), spo2:dir(delta("spo2"),false), sbp:dir(delta("sbp"),false), rr:dir(delta("rr"),true), temp:dir(delta("tempC"),false) };
+    }
+    function normalizeOxygenSupport(val){
+      if(!val) return "Room Air";
+      const match = oxygenModes.find(o => o.toLowerCase() === String(val).toLowerCase());
+      return match || "Room Air";
+    }
+    function ensureSlot(pid){ if(slots.includes(pid)) return; const idx=slots.findIndex(x=>!x); if(idx!==-1) slots[idx]=pid; }
+    function ingest(reading){ const {patient_id,hr,spo2,sbp,rr}=reading; if(!patient_id) return; const ts=reading.ts?Number(reading.ts):Date.now(); if(!patients.has(patient_id)){ patients.set(patient_id,{history:[],last:null,trend:null}); ensureSlot(patient_id); }
+      if(!assignmentMap.has(patient_id)) assignmentMap.set(patient_id, ts);
+      const p=patients.get(patient_id);
+      const prev = p.last || {};
+      const defaultCfg = Object.values(bedConfig).find(cfg=>cfg.patientId===patient_id) || {};
+      const tempRaw = reading.tempC ?? reading.temperature ?? reading.temp ?? prev.tempC ?? defaultCfg.temperature ?? 37.0;
+      const pain = reading.pain ?? reading.pain_present ?? reading.painPresent ?? prev.pain ?? defaultCfg.pain ?? false;
+      const injury = reading.injury ?? reading.injury_present ?? reading.injuryPresent ?? prev.injury ?? defaultCfg.injury ?? false;
+      const oxygenSupport = normalizeOxygenSupport(reading.oxygen_support || reading.oxygenSupport || prev.oxygenSupport || defaultCfg.oxygenSupport || "Room Air");
+      const clean={patient_id, hr:Number(hr), spo2:Number(spo2), sbp:Number(sbp), dbp:Number(reading.dbp), rr:Number(rr), tempC: Number.isFinite(Number(tempRaw)) ? Number(tempRaw) : 37.0, pain:Boolean(pain), injury:Boolean(injury), oxygenSupport, ts, note: reading.note||"", age: Number(reading.age) || prev.age || defaultCfg.age || null, gender: reading.gender || prev.gender || defaultCfg.gender || null};
+      p.history.push(clean); if(p.history.length>40) p.history.shift(); p.last=clean; p.trend=computeTrend(patient_id); updateAvailablePatients(); render(); updateBedSnapshot(); }
+    function metricBlock(label,val,trend){ const icon=trend==="up"?"expand_less":trend==="down"?"expand_more":"drag_handle"; const cls=trend||"flat"; const labelIcon=metricIcons[label]||"info"; return `
+      <div class="metric">
+        <div class="k"><span class="material-symbols-rounded" style="font-size:16px;">${labelIcon}</span>${label}</div>
+        <div class="trend ${cls}"><span class="material-symbols-rounded">${icon}</span></div>
+        <div class="v">${val}</div>
+      </div>`; }
+    function render(){ stripEl.innerHTML=""; for(let i=0;i<4;i++){ const pid=slots[i]; const p=pid?patients.get(pid):null; const last=p?.last; const tr=p?.trend||{hr:"flat",spo2:"flat",sbp:"flat",rr:"flat"}; const safeNum=n=>Number.isFinite(n)?n:"–";
+        const bpText = last ? `${safeNum(last?.sbp)}/${safeNum(last?.dbp)}` : "–/–";
+        const card=document.createElement("div"); card.className=`card mon-${i+1}`; card.innerHTML=`
+          <div class="card-head">
+            <div>
+              <div class="mon-tag">Monitor ${i+1}</div>
+              <div class="pid">${pid||"(unassigned)"}</div>
+            </div>
+            <div class="updated">${ago(last?.ts)}</div>
+          </div>
+          <div class="vitals">
+            ${metricBlock("HR", safeNum(last?.hr), tr.hr)}
+            ${metricBlock("SPO₂", safeNum(last?.spo2), tr.spo2)}
+            ${metricBlock("BP", bpText, tr.sbp)}
+            ${metricBlock("RR", safeNum(last?.rr), tr.rr)}
+          </div>
+          <div class="status-row">
+            <span class="status-dot ${last ? "" : "bad"}"></span>
+            <span>${last ? `Live ${new Date(last.ts).toLocaleTimeString()}` : "Waiting for data"}</span>
+            ${last?.note ? `<span>• ${last.note}</span>` : ""}
+          </div>`;
+        stripEl.appendChild(card); }
+    }
+    function formatDuration(ms){ const s=Math.max(0,Math.floor(ms/1000)); const h=Math.floor(s/3600); const m=Math.floor((s%3600)/60); const rem=s%60; if(h>0) return `${h}h ${m}m`; if(m>0) return `${m}m ${rem}s`; return `${rem}s`; }
+    function formatTimestamp(ms){ if(!ms) return "—"; return new Date(ms).toLocaleString(); }
+    function updateAvailablePatients(){
+      availablePatients = Array.from(patients.keys());
+      const select = document.getElementById("patientSelect");
+      if(!select) return;
+      select.innerHTML = `<option value="">Select patient</option>`;
+      availablePatients.forEach(pid=>{
+        const seenTs = assignmentMap.get(pid);
+        const option = document.createElement("option");
+        option.value = pid;
+        option.textContent = `${pid} ${seenTs ? `(${new Date(seenTs).toLocaleTimeString()})` : ""}`;
+        select.appendChild(option);
+      });
+    }
+    function vitalTile(label,val,trend){ const icon=trend==="up"?"expand_less":trend==="down"?"expand_more":"drag_handle"; const cls=trend||"flat"; const iconName=metricIcons[label]||"favorite"; return `
+      <div class="vital-tile">
+        <div class="k"><span class="material-symbols-rounded">${iconName}</span>${label}</div>
+        <div class="v" ${label==="BP"?'style="font-size:28px;"':''}>${val}</div>
+        <div class="trend ${cls}"><span class="material-symbols-rounded" style="font-size:16px;">${icon}</span>${cls}</div>
+      </div>`; }
+    function updateBedSnapshot(){
+      const snapshotEl = document.getElementById("bed-snapshot");
+      if(!snapshotEl) return;
+      const bedsSnapshot = beds.map((bedId) => {
+        const cfg = bedConfig[bedId];
+        const pid = cfg?.patientId;
+        const last = pid ? patients.get(pid)?.last : null;
+        const assigned = Boolean(cfg?.assigned);
+        const displayName = `${assigned ? (cfg?.name || pid || "(patient)") : "(vacant)"} • ${cfg?.label || bedId}`;
+        const painVal = (last?.pain ?? cfg?.pain);
+        const injuryVal = (last?.injury ?? cfg?.injury);
+        const painText = painVal === null ? "—" : painVal ? "Yes" : "No";
+        const injuryText = injuryVal === null ? "—" : injuryVal ? "Yes" : "No";
+        const oxygenText = last?.oxygenSupport || cfg?.oxygenSupport || "—";
+        return {
+          bedId,
+          label: cfg?.label || bedId,
+          assigned,
+          patientId: pid || null,
+          displayName,
+          patientIdDisplay: assigned ? `Patient ID: ${pid || "—"}` : "Patient ID: —",
+          name: assigned ? (cfg?.name || null) : null,
+          doctor: cfg?.doctor || null,
+          nurse: cfg?.nurse || null,
+          complaint: assigned ? (cfg?.complaint || "—") : "—",
+          diagnosis: assigned ? (cfg?.diagnosis || "—") : "—",
+          pain: assigned ? painText : "—",
+          injury: assigned ? injuryText : "—",
+          oxygenSupport: assigned ? oxygenText : "—",
+          prediction: cfg?.prediction || null,
+          vitals: last
+            ? {
+                hr: Number.isFinite(last?.hr) ? last.hr : null,
+                spo2: Number.isFinite(last?.spo2) ? last.spo2 : null,
+                bp: Number.isFinite(last?.sbp) ? `${last?.sbp}/${last?.dbp ?? "–"}` : null,
+                rr: Number.isFinite(last?.rr) ? last.rr : null,
+                tempC: Number.isFinite(last?.tempC) ? last.tempC : null,
+              }
+            : null,
+        };
+      });
+      snapshotEl.textContent = JSON.stringify(bedsSnapshot);
+    }
+    function renderBedWizard(){
+      const cfg=bedConfig[selectedBed] || bedConfig.bed1;
+      const pid=cfg.patientId;
+      const p=pid ? patients.get(pid) : null;
+      const last=p?.last;
+      const tr=p?.trend||{hr:"flat",spo2:"flat",sbp:"flat",rr:"flat",temp:"flat"};
+      const safeNum=n=>Number.isFinite(n)?n:"–";
+      const bpText = last ? `${safeNum(last?.sbp)}/${safeNum(last?.dbp)}` : "–/–";
+      const tempVal = Number.isFinite(last?.tempC) ? last.tempC : cfg.temperature;
+      const painVal = (last?.pain ?? cfg.pain);
+      const injuryVal = (last?.injury ?? cfg.injury);
+      const painText = painVal === null ? "—" : painVal ? "Yes" : "No";
+      const injuryText = injuryVal === null ? "—" : injuryVal ? "Yes" : "No";
+      const oxygenText = last?.oxygenSupport || cfg.oxygenSupport || "—";
+      bedPatientNameEl.textContent = `${cfg.assigned ? (cfg.name || pid || "(patient)") : "(vacant)"} • ${cfg.label}`;
+      bedPatientIdEl.textContent = `Patient ID: ${cfg.assigned ? (pid||"—") : "—"}`;
+      bedPatientGenderEl.textContent = `Gender: ${cfg.assigned ? (cfg.gender || "—") : "—"}`;
+      bedPatientAgeEl.textContent = `Age: ${cfg.assigned && cfg.age ? cfg.age : "—"}`;
+      bedComplaintEl.textContent = cfg.assigned && cfg.complaint ? cfg.complaint : "—";
+      bedDiagnosisEl.textContent = cfg.assigned && cfg.diagnosis ? cfg.diagnosis : "—";
+      bedPainEl.textContent = cfg.assigned ? painText : "—";
+      bedInjuryEl.textContent = cfg.assigned ? injuryText : "—";
+      bedOxygenEl.textContent = cfg.assigned ? oxygenText : "—";
+      bedNurseEl.textContent = cfg.nurse;
+      bedDoctorEl.textContent = cfg.doctor;
+      bedPredictionText.textContent = `Prediction: ${cfg.prediction}`;
+      const assignTs = bedAssignmentMap.get(selectedBed);
+      const now = Date.now();
+      bedTimeInEl.textContent = assignTs ? formatTimestamp(assignTs) : "—";
+      bedTimeTotalEl.textContent = assignTs ? formatDuration(now - assignTs) : "—";
+      bedVitalsEl.innerHTML = cfg.assigned ? `
+        ${vitalTile("HR", safeNum(last?.hr), tr.hr)}
+        ${vitalTile("BP", bpText, tr.sbp)}
+        ${vitalTile("SPO₂", safeNum(last?.spo2), tr.spo2)}
+        ${vitalTile("RR", safeNum(last?.rr), tr.rr)}
+        ${vitalTile("Temp", Number.isFinite(tempVal) ? `${tempVal.toFixed(1)} °C` : "—", tr.temp)}
+      ` : `<div style="font-size:14px; color:var(--muted);">Bed 1 is vacant. Assign a patient to see vitals.</div>`;
+      updateBedSnapshot();
+    }
+    function setStatus(state,text){
+      connText.textContent=text;
+      if(state==="connected"){
+        connDot.className="dot";
+        connectBtn.disabled=true;
+        disconnectBtn.disabled=false;
+      }else if(state==="warn"){
+        connDot.className="dot warn";
+        connectBtn.disabled=false;
+        disconnectBtn.disabled=false;
+      }else{
+        connDot.className="dot bad";
+        connectBtn.disabled=false;
+        disconnectBtn.disabled=true;
+      }
+    }
+    function parseBroker(urlStr){ try{ const u=new URL(urlStr); if((u.protocol==="ws:"||u.protocol==="wss:") && (!u.pathname||u.pathname==="/")) u.pathname="/mqtt"; return u; }catch(_){ return null; } }
+    function connectMQTT(){ const broker=brokerInput.value.trim(); const topic=topicInput.value.trim()||"spotcheck/+/vitals"; const clientId=clientInput.value.trim()||`sc-dashboard-${randomId()}`; clientInput.value=clientId; if(client){ manualDisconnect=true; client.end(true); client=null; }
+      const parsed=parseBroker(broker); if(!parsed){ alert("Invalid broker URL"); return; }
+      const options={ clientId, clean:true, reconnectPeriod:4000, connectTimeout:10000, keepalive:60, resubscribe:true, protocolVersion:4 };
+      try{ client=mqtt.connect(parsed.toString(), options); }catch(e){ alert("MQTT init error: "+e.message); return; }
+      manualDisconnect=false;
+      client.on("connect",()=>{ setStatus("connected","Connected"); client.subscribe(topic, err=>{ if(err) alert("Subscribe error: "+err.message); }); modal.style.display="none"; });
+      client.on("reconnect",()=>{ if(!manualDisconnect) setStatus("warn","Reconnecting..."); });
+      client.on("close",()=>{ if(!manualDisconnect) setStatus("warn","Connection lost - retrying..."); });
+      client.on("error",err=>{ console.warn("MQTT error",err); if(!manualDisconnect) setStatus("warn","Error - check broker"); });
+      client.on("message",(_topic,payload)=>{ try{ const data=JSON.parse(new TextDecoder().decode(payload)); ingest(data); }catch(err){ console.warn("Bad payload",err); } });
+    }
+    function disconnectMQTT(){ manualDisconnect=true; if(client){ client.end(true); client=null; } setStatus("disconnected","Disconnected (manual)"); }
+    function clearData(){ patients.clear(); for(let i=0;i<slots.length;i++) slots[i]=null; render(); }
+    settingsBtn.addEventListener("click", ()=> { modal.style.display="flex"; });
+    closeModal.addEventListener("click", ()=> { modal.style.display="none"; });
+    modal.addEventListener("click", (e)=>{ if(e.target===modal) modal.style.display="none"; });
+    connectBtn.addEventListener("click", connectMQTT);
+    disconnectBtn.addEventListener("click", disconnectMQTT);
+    clearBtn.addEventListener("click", clearData);
+    function openBed(bedId){
+      selectedBed = bedId;
+      const cfg = bedConfig[bedId];
+      if(cfg?.background && bedModalPane) bedModalPane.style.backgroundImage = `url("${cfg.background}")`;
+      if(cfg?.icon && bedIconImg) bedIconImg.src = cfg.icon;
+      if(cfg?.doctor) selectedDoctor = cfg.doctor;
+      updateAvailablePatients();
+      buildDoctorStrip();
+      bedModal.style.display="flex";
+      renderBedWizard();
+      updateBedSnapshot();
+    }
+    bed1Tile?.addEventListener("click", ()=>openBed("bed1"));
+    bed2Tile?.addEventListener("click", ()=>openBed("bed2"));
+    bed3Tile?.addEventListener("click", ()=>openBed("bed3"));
+    closeBedModal?.addEventListener("click", ()=>{ bedModal.style.display="none"; });
+    bedModal?.addEventListener("click", (e)=>{ if(e.target===bedModal) bedModal.style.display="none"; });
+    document.getElementById("assignSelected")?.addEventListener("click", ()=>{
+      const pid = document.getElementById("patientSelect")?.value;
+      if(!pid) { alert("Select a patient from monitors first."); return; }
+      assignPatientToBed(pid, selectedBed);
+    });
+    setInterval(()=>{ if(bedModal.style.display==="flex") renderBedWizard(); }, 1000);
+    clientInput.value = `sc-dashboard-${randomId()}`;
+    defaultIds.forEach((id)=>ensureSlot(id));
+    render();
+    updateAvailablePatients();
+    updateBedSnapshot();
+
+    function assignDoctor(name){
+      const cfg = bedConfig[selectedBed];
+      selectedDoctor = name;
+      if(cfg) cfg.doctor = name;
+      if(bedModal.style.display==="flex") renderBedWizard();
+      document.querySelectorAll(".doctor-card").forEach(card=>{
+        card.classList.toggle("selected", card.dataset.name===name);
+      });
+    }
+    function buildDoctorStrip(){
+      doctorStrip.innerHTML = "";
+      const cfg = bedConfig[selectedBed];
+      const currentDoc = cfg?.doctor || selectedDoctor;
+      doctorRoster.forEach(doc=>{
+        const card = document.createElement("div");
+        card.className = "team-card doctor-card";
+        card.dataset.name = doc.name;
+        card.title = doc.name;
+        const roleLabel = doc.role ? ` · ${doc.role}` : "";
+        card.innerHTML = `<img src="${doc.img}" alt="${doc.name}" /><div class="label">${doc.name}${roleLabel}</div>`;
+        if(doc.name === currentDoc) card.classList.add("selected");
+        card.addEventListener("click", ()=>assignDoctor(doc.name));
+        doctorStrip.appendChild(card);
+      });
+    }
+    function assignPatientToBed(pid, bedId){
+      if(!pid) return;
+      const target = bedId || selectedBed || "bed1";
+      const cfg = bedConfig[target];
+      if(!cfg) return;
+      const now = Date.now();
+      const p = patients.get(pid);
+      cfg.patientId = pid;
+      cfg.name = `Patient ${pid}`;
+      cfg.complaint = p?.last?.complaint || "Pending";
+      cfg.diagnosis = p?.last?.diagnosis || "Pending";
+      cfg.pain = p?.last?.pain ?? null;
+      cfg.injury = p?.last?.injury ?? null;
+      cfg.oxygenSupport = p?.last?.oxygenSupport || "Room Air";
+      cfg.temperature = p?.last?.tempC ?? null;
+      cfg.doctor = cfg.doctor === "Select doctor" ? (selectedDoctor || cfg.doctor) : cfg.doctor;
+      cfg.assigned = true;
+      cfg.age = p?.last?.age ?? null;
+      cfg.gender = p?.last?.gender ?? null;
+      bedAssignmentMap.set(target, now);
+      ensureSlot(pid);
+      lastPredictionTs[target] = 0; // force immediate prediction on next loop
+      renderBedWizard();
+    }
+    async function getGradioClient(){
+      if(gradioClientPromise) return gradioClientPromise;
+      gradioClientPromise = import("https://esm.sh/@gradio/client@latest")
+        .then(mod=>mod.Client.connect(TRIAGE_SPACE))
+        .catch(err=>{ console.warn("Failed to load Gradio client", err); gradioClientPromise=null; throw err; });
+      return gradioClientPromise;
+    }
+    function buildTriagePayload(bedId){
+      const cfg = bedConfig[bedId];
+      if(!cfg.assigned) return null;
+      const p = patients.get(cfg.patientId);
+      const last = p?.last;
+      if(!last) return null;
+      const toYN = (b)=> b ? "Yes" : "No";
+      const oxy = last.oxygenSupport || cfg.oxygenSupport || "Room Air";
+      const payload = {
+        age: Number(cfg.age) || 30,
+        gender: cfg.gender || "Female",
+        pain: toYN(last?.pain ?? cfg.pain ?? false),
+        injury: toYN(last?.injury ?? cfg.injury ?? false),
+        oxy_support: oxy,
+        rr: Number(last.rr) || 0,
+        spo2: Number(last.spo2) || 0,
+        hr: Number(last.hr) || 0,
+        temp: Number(last.tempC ?? cfg.temperature ?? 37.0) || 37,
+        sbp: Number(last.sbp) || 0,
+        dbp: Number(last.dbp) || 0
+      };
+      return payload;
+    }
+    async function runTriagePrediction(bedId){
+      const now = Date.now();
+      if(now - (lastPredictionTs[bedId]||0) < PREDICT_INTERVAL_MS) return;
+      const payload = buildTriagePayload(bedId);
+      if(!payload) return;
+      lastPredictionTs[bedId] = now;
+      try{
+        const client = await getGradioClient();
+        const result = await client.predict(TRIAGE_ENDPOINT, payload);
+        const text = Array.isArray(result?.data) ? result.data[0] : result?.data || "Pending";
+        bedConfig[bedId].prediction = text || "Pending";
+        if(bedModal.style.display==="flex" && selectedBed===bedId) renderBedWizard();
+      }catch(err){
+        console.warn("Prediction error", err);
+        bedConfig[bedId].prediction = "Prediction error";
+      }
+    }
+    setInterval(()=>{ beds.forEach(runTriagePrediction); }, PREDICT_INTERVAL_MS);
+    buildDoctorStrip();
+  </script>
+</body>
+</html>
