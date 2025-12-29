@@ -91,13 +91,23 @@
     .status-row{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; position:relative; z-index:1; margin-top:8px; font-size:12px; color:var(--muted); }
     .status-dot{ width:8px; height:8px; border-radius:999px; background:var(--good); box-shadow:0 0 0 3px rgba(15,157,88,0.12); }
     .status-dot.bad{ background:var(--bad); box-shadow:0 0 0 3px rgba(230,76,91,0.18); }
+    .draggable-card{ cursor:grab; }
+    .draggable-card:active{ cursor:grabbing; }
+    .bed-tile-wrap{ position:relative; cursor:pointer; }
+    .bed-tile{ width:100%; height:100%; display:block; object-fit:cover; border-radius:14px; }
+    .bed-tile.drop-target{ outline:3px solid rgba(95,179,255,0.6); outline-offset:-6px; }
+    .bed-status-badge{ position:absolute; top:10px; right:10px; padding:6px 10px; border-radius:999px; font-size:12px; font-weight:800; letter-spacing:0.2px; border:1px solid rgba(0,0,0,0.08); box-shadow:0 10px 18px rgba(0,0,0,0.12); }
+    .bed-status-badge.available{ background:rgba(255,255,255,0.9); color:#2c3a4f; }
+    .bed-status-badge.occupied{ background:rgba(230,76,91,0.16); color:#8c1d2a; border-color:rgba(230,76,91,0.35); }
+    .staff-badge{ font-size:11px; font-weight:700; padding:4px 8px; border-radius:999px; background:rgba(0,0,0,0.05); }
+    .staff-badge.busy{ background:rgba(247,183,49,0.2); color:#7a5200; }
     .beds-full{ margin:24px 0 0; width:100%; padding:0 12px; }
     .beds-stack{ display:grid; grid-template-columns: 827fr 319fr 328fr 327fr; gap:12px; align-items:stretch; grid-auto-rows:var(--beds-height); }
     .beds-full img{ width:100%; height:100%; display:block; object-fit:cover; border-radius:14px; box-shadow:none; }
     .beds-full img.monitors-img{ object-position:40% center; }
     /* Team strip */
     .team-strip{ display:flex; gap:12px; flex-wrap:wrap; justify-content:center; padding:18px 10px 6px; }
-    .team-card{ width:168px; background:transparent; border:none; border-radius:0; padding:0; box-shadow:none; }
+    .team-card{ width:168px; background:transparent; border:none; border-radius:0; padding:0; box-shadow:none; cursor:grab; }
     .team-card img{ width:100%; border-radius:0; display:block; box-shadow:none; }
     /* Modal glass */
     .modal-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,0.25); display:none; align-items:center; justify-content:center; padding:16px; z-index:20; backdrop-filter: blur(7px); }
@@ -146,6 +156,23 @@
     .doctor-card{ position:relative; cursor:pointer; }
     .doctor-card .label{ position:absolute; inset:auto 8px 8px 8px; background:rgba(0,0,0,0.55); color:#fff; padding:6px 8px; border-radius:10px; font-weight:800; font-size:12px; text-align:center; }
     .doctor-card.selected{ outline:3px solid var(--accent); outline-offset:4px; border-radius:6px; }
+    .assigned-staff{ display:flex; flex-wrap:wrap; gap:12px; min-height:120px; }
+    .staff-chip{ display:flex; gap:12px; align-items:center; padding:10px 12px; border-radius:16px; background:rgba(255,255,255,0.9); border:1px solid rgba(0,0,0,0.08); box-shadow:0 12px 22px rgba(0,0,0,0.12); }
+    .staff-chip img{ width:72px; height:72px; border-radius:14px; object-fit:cover; }
+    .staff-chip .meta{ display:flex; flex-direction:column; font-weight:800; font-size:14px; }
+    .staff-chip .meta span{ font-size:12px; font-weight:700; color:var(--muted); }
+    .staff-empty{ font-size:13px; font-weight:600; color:var(--muted); }
+    .staff-assign-btn{ margin-top:12px; border:2px dashed rgba(95,179,255,0.35); border-radius:16px; padding:14px; background:rgba(255,255,255,0.55); text-align:center; font-weight:700; color:var(--muted); cursor:pointer; }
+    .staff-assign-btn:hover{ border-color:rgba(95,179,255,0.9); background:rgba(95,179,255,0.14); color:#2f517a; }
+    .staff-modal-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,0.35); display:none; align-items:center; justify-content:center; padding:20px; z-index:40; backdrop-filter: blur(8px); }
+    .staff-modal{ width:min(980px, 96vw); max-height:88vh; overflow:hidden; background:#fff; border-radius:24px; border:1px solid rgba(0,0,0,0.08); box-shadow:0 28px 64px rgba(0,0,0,0.24); padding:20px; display:flex; flex-direction:column; gap:16px; }
+    .staff-modal-header{ display:flex; justify-content:space-between; align-items:center; gap:12px; }
+    .staff-modal-title{ font-size:18px; font-weight:800; display:flex; align-items:center; gap:8px; }
+    .staff-modal-body{ display:grid; grid-template-columns: minmax(260px, 1fr) minmax(260px, 1fr); gap:16px; min-height:0; }
+    .staff-modal-panel{ border:1px solid rgba(0,0,0,0.08); border-radius:18px; padding:14px; background:rgba(250,250,250,0.8); overflow:auto; min-height:0; }
+    .staff-roster-grid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap:12px; justify-content:stretch; }
+    .staff-dropzone{ border:2px dashed rgba(95,179,255,0.35); border-radius:16px; padding:14px; text-align:center; font-weight:700; color:var(--muted); min-height:90px; display:flex; align-items:center; justify-content:center; }
+    .staff-dropzone.drop-active{ border-color:rgba(95,179,255,0.9); background:rgba(95,179,255,0.12); color:#2f517a; }
     .close-pill{ position:sticky; top:12px; right:12px; margin-left:auto; align-self:flex-end; width:46px; height:46px; border-radius:999px; border:1px solid rgba(0,0,0,0.1); background:rgba(255,255,255,0.95); display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 16px 30px rgba(0,0,0,0.2); z-index:2; }
     .close-pill:hover{ background:#fff; }
 
@@ -156,6 +183,7 @@
       .beds-stack{ grid-template-columns:repeat(2, minmax(0,1fr)); }
       .bed-modal-inner{ grid-template-columns:1fr; }
       .close-pill{ position:absolute; }
+      .staff-modal-body{ grid-template-columns:1fr; }
     }
   </style>
 </head>
@@ -185,10 +213,19 @@
 
   <div class="beds-full">
     <div class="beds-stack">
-      <img src="public/Monitors.png" alt="Monitors" class="monitors-img" />
-      <img src="public/Bed1.png" alt="Bed 1" id="bed1Tile" style="cursor:pointer;" />
-      <img src="public/Bed2.png" alt="Bed 2" id="bed2Tile" style="cursor:pointer;" />
-      <img src="public/Bed3.png" alt="Bed 3" id="bed3Tile" style="cursor:pointer;" />
+      <img src="Monitors.png" alt="Monitors" class="monitors-img" />
+      <div class="bed-tile-wrap" id="bed1Wrap">
+        <img src="Bed1.png" alt="Bed 1" id="bed1Tile" class="bed-tile" />
+        <div class="bed-status-badge available" id="bed1Status">Available</div>
+      </div>
+      <div class="bed-tile-wrap" id="bed2Wrap">
+        <img src="Bed2.png" alt="Bed 2" id="bed2Tile" class="bed-tile" />
+        <div class="bed-status-badge available" id="bed2Status">Available</div>
+      </div>
+      <div class="bed-tile-wrap" id="bed3Wrap">
+        <img src="Bed3.png" alt="Bed 3" id="bed3Tile" class="bed-tile" />
+        <div class="bed-status-badge available" id="bed3Status">Available</div>
+      </div>
     </div>
   </div>
 
@@ -227,7 +264,7 @@
       <button class="close-pill" id="closeBedModal"><span class="material-symbols-rounded">close</span></button>
       <div class="bed-modal-inner">
         <div class="shell patient-card">
-          <div class="bed-icon"><img id="bedIconImg" src="public/Bed1-Icon.png" alt="Bed icon"></div>
+          <div class="bed-icon"><img id="bedIconImg" src="Bed1-Icon.png" alt="Bed icon"></div>
           <div class="wizard-meta">
             <strong id="bedPatientName">(vacant) • Bed 1</strong>
             <div id="bedPatientId">Patient ID: —</div>
@@ -239,15 +276,8 @@
         <div class="shell" style="grid-column: span 2;">
           <div class="section-title"><span class="material-symbols-rounded">assignment_ind</span> Bed Planning</div>
           <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center;">
-            <label style="font-size:13px; color:var(--muted); display:flex; gap:6px; align-items:center;">
-              <span class="material-symbols-rounded" style="font-size:18px;">patient_list</span>
-              Patient
-              <select id="patientSelect" style="margin-left:6px; padding:10px 12px; border-radius:12px; border:1px solid rgba(0,0,0,0.12); background:rgba(255,255,255,0.9); font:inherit;">
-                <option value="">Select patient</option>
-              </select>
-            </label>
-            <button class="btn" id="assignSelected"><span class="material-symbols-rounded">assignment_turned_in</span>Assign to Bed 1</button>
-            <span style="font-size:12px; color:var(--muted);">Select a live patient from monitors to dispatch into Bed 1.</span>
+            <span style="font-size:12px; color:var(--muted);">Drag a live patient card from the waiting area onto the bed tile to assign.</span>
+            <button class="btn" id="clearBed"><span class="material-symbols-rounded">person_remove</span>Remove patient</button>
           </div>
         </div>
 
@@ -298,21 +328,35 @@
 
         <div class="shell care-card">
           <div class="section-title"><span class="material-symbols-rounded">group</span> Care Context</div>
-          <div class="care-row">
-            <div>
-              <div class="info-label">Assigned nurse</div>
-              <div class="info-value" id="bedNurse">—</div>
-            </div>
-            <div>
-              <div class="info-label">Assigned doctor</div>
-              <div class="info-value" id="bedDoctor">—</div>
-            </div>
-          </div>
+          <div class="assigned-staff" id="assignedStaffList"></div>
+          <button class="staff-assign-btn" id="openStaffAssign">
+            Click here to assign staff members.
+          </button>
         </div>
 
         <div class="shell model-card" id="modelFrame">
           <div class="prediction-badge" id="bedPrediction"><span class="material-symbols-rounded">psychology</span><span id="bedPredictionText">Waiting for model...</span></div>
           <div>Embed trained model here (realtime vitals input)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="staff-modal-backdrop" id="staffModal">
+    <div class="staff-modal">
+      <div class="staff-modal-header">
+        <div class="staff-modal-title"><span class="material-symbols-rounded">group</span> Assign Staff</div>
+        <button class="btn" id="closeStaffModal" title="Close"><span class="material-symbols-rounded">close</span></button>
+      </div>
+      <div class="staff-modal-body">
+        <div class="staff-modal-panel">
+          <div class="section-title" style="margin-bottom:8px;"><span class="material-symbols-rounded">groups</span> Staff Roster</div>
+          <div class="staff-roster-grid" id="staffRosterGrid"></div>
+        </div>
+        <div class="staff-modal-panel">
+          <div class="section-title" style="margin-bottom:8px;"><span class="material-symbols-rounded">assignment_ind</span> Assigned to Bed</div>
+          <div class="assigned-staff" id="staffModalAssigned"></div>
+          <div class="staff-dropzone" id="staffModalDropzone">Drop staff here to assign</div>
         </div>
       </div>
     </div>
@@ -347,20 +391,30 @@
     const bedOxygenEl = document.getElementById("bedOxygen");
     const bedTimeInEl = document.getElementById("bedTimeIn");
     const bedTimeTotalEl = document.getElementById("bedTimeTotal");
-    const bedNurseEl = document.getElementById("bedNurse");
-    const bedDoctorEl = document.getElementById("bedDoctor");
     const bedIconImg = document.getElementById("bedIconImg");
     const bed1Tile = document.getElementById("bed1Tile");
     const bed2Tile = document.getElementById("bed2Tile");
     const bed3Tile = document.getElementById("bed3Tile");
+    const bed1Status = document.getElementById("bed1Status");
+    const bed2Status = document.getElementById("bed2Status");
+    const bed3Status = document.getElementById("bed3Status");
     const bedModalPane = document.getElementById("bedModalPane");
+    const clearBedBtn = document.getElementById("clearBed");
     let selectedBed = "bed1";
     const doctorStrip = document.getElementById("doctorStrip");
+    const assignedStaffList = document.getElementById("assignedStaffList");
+    const openStaffAssignBtn = document.getElementById("openStaffAssign");
+    const staffModal = document.getElementById("staffModal");
+    const closeStaffModalBtn = document.getElementById("closeStaffModal");
+    const staffRosterGrid = document.getElementById("staffRosterGrid");
+    const staffModalAssigned = document.getElementById("staffModalAssigned");
+    const staffModalDropzone = document.getElementById("staffModalDropzone");
     const bedPredictionText = document.getElementById("bedPredictionText");
 
     let client = null;
     let manualDisconnect = false;
     const slots = new Array(4).fill(null);
+    const patientQueue = [];
     const patients = new Map();
     const assignmentMap = new Map(); // patient_id -> first seen timestamp
     const bedAssignmentMap = new Map(); // bed -> assigned timestamp
@@ -373,16 +427,15 @@
         gender: null,
         complaint: null,
         diagnosis: null,
-        nurse: "Nurse Team A",
-        doctor: "Select doctor",
+        assignedStaff: [],
         pain: null,
         injury: null,
         oxygenSupport: null,
         temperature: null,
         assigned: false,
         prediction: "Waiting for model...",
-        background: "public/Bed1_Background.png",
-        icon: "public/Bed1-Icon.png",
+        background: "Bed1_Background.png",
+        icon: "Bed1-Icon.png",
         label: "Bed 1"
       },
       bed2: {
@@ -392,16 +445,15 @@
         gender: null,
         complaint: null,
         diagnosis: null,
-        nurse: "Nurse Team B",
-        doctor: "Select doctor",
+        assignedStaff: [],
         pain: null,
         injury: null,
         oxygenSupport: null,
         temperature: null,
         assigned: false,
         prediction: "Waiting for model...",
-        background: "public/Bed2_Background.png",
-        icon: "public/Bed2-Icon.png",
+        background: "Bed2_Background.png",
+        icon: "Bed2-Icon.png",
         label: "Bed 2"
       },
       bed3: {
@@ -411,16 +463,15 @@
         gender: null,
         complaint: null,
         diagnosis: null,
-        nurse: "Nurse Team C",
-        doctor: "Select doctor",
+        assignedStaff: [],
         pain: null,
         injury: null,
         oxygenSupport: null,
         temperature: null,
         assigned: false,
         prediction: "Waiting for model...",
-        background: "public/Bed3_Background.png",
-        icon: "public/Bed3-Icon.png",
+        background: "Bed3_Background.png",
+        icon: "Bed3-Icon.png",
         label: "Bed 3"
       }
     };
@@ -428,14 +479,14 @@
     const oxygenModes = ["Room Air","Nasal Cannula","Mask","Non-rebreather","Bag-valve-mask","Ventilated"];
     const metricIcons = { HR:"favorite", "SPO₂":"bloodtype", SBP:"monitor_heart", RR:"air", BP:"monitor_heart", Temp:"device_thermostat" };
     const doctorRoster = [
-      {name:"Drake", img:"public/Dr_Drake_Ramoray.png", role:"Doctor"},
-      {name:"Mina", img:"public/Dr_Drake_Ramoray.png", role:"Doctor"},
-      {name:"Salma", img:"public/Dr_Drake_Ramoray.png", role:"Nurse"},
-      {name:"Karim", img:"public/Dr_Drake_Ramoray.png", role:"Nurse"},
-      {name:"Rania", img:"public/Dr_Drake_Ramoray.png", role:"Nurse"},
-      {name:"Omar", img:"public/Dr_Drake_Ramoray.png", role:"Nurse"},
+      {name:"Drake", img:"Dr_Drake_Ramoray.png", role:"Doctor"},
+      {name:"Mina", img:"Dr_Mina.png", role:"Doctor"},
+      {name:"Salma", img:"RN_Salma.png", role:"Nurse"},
+      {name:"Karim", img:"RN_Karim.png", role:"Nurse"},
+      {name:"Rania", img:"RN_Rania.png", role:"Nurse"},
+      {name:"Omar", img:"RN_Omar.png", role:"Nurse"},
     ];
-    let selectedDoctor = doctorRoster[0].name;
+    const staffBusyMap = new Map(); // name -> bedId
     let availablePatients = [];
     let gradioClientPromise = null;
     const lastPredictionTs = { bed1:0, bed2:0, bed3:0 };
@@ -445,6 +496,9 @@
 
     function randomId(){ return "sc-" + Math.random().toString(16).slice(2,7); }
     function ago(ts){ if(!ts) return "idle"; const s=Math.max(0,Math.round((Date.now()-ts)/1000)); if(s<60) return `updated ${s}s ago`; const m=Math.floor(s/60); return `updated ${m}m ago`; }
+    function isPatientAssigned(pid){
+      return beds.some((bedId)=>bedConfig[bedId]?.patientId === pid);
+    }
     function computeTrend(pid){
       const p=patients.get(pid);
       const h=p.history;
@@ -460,7 +514,59 @@
       const match = oxygenModes.find(o => o.toLowerCase() === String(val).toLowerCase());
       return match || "Room Air";
     }
-    function ensureSlot(pid){ if(slots.includes(pid)) return; const idx=slots.findIndex(x=>!x); if(idx!==-1) slots[idx]=pid; }
+    function ensureSlot(pid){
+      if(!pid || isPatientAssigned(pid)) return;
+      if(slots.includes(pid) || patientQueue.includes(pid)) return;
+      const idx = slots.findIndex(x=>!x);
+      if(idx!==-1){ slots[idx]=pid; return; }
+      patientQueue.push(pid);
+    }
+    function refillSlotsFromQueue(){
+      for(let i=0;i<slots.length;i++){
+        if(slots[i]) continue;
+        while(patientQueue.length){
+          const next = patientQueue.shift();
+          if(next && !slots.includes(next) && !isPatientAssigned(next)){
+            slots[i] = next;
+            break;
+          }
+        }
+      }
+    }
+    function removeFromWaiting(pid){
+      for(let i=0;i<slots.length;i++){
+        if(slots[i] === pid) slots[i] = null;
+      }
+      for(let i=patientQueue.length-1;i>=0;i--){
+        if(patientQueue[i] === pid) patientQueue.splice(i,1);
+      }
+      refillSlotsFromQueue();
+    }
+    function clearBedAssignment(bedId){
+      const cfg = bedConfig[bedId];
+      if(!cfg) return;
+      (cfg.assignedStaff || []).forEach((name)=>{
+        if(staffBusyMap.get(name) === bedId) staffBusyMap.delete(name);
+      });
+      cfg.patientId = null;
+      cfg.name = "(vacant)";
+      cfg.age = null;
+      cfg.gender = null;
+      cfg.complaint = null;
+      cfg.diagnosis = null;
+      cfg.pain = null;
+      cfg.injury = null;
+      cfg.oxygenSupport = null;
+      cfg.temperature = null;
+      cfg.assigned = false;
+      cfg.prediction = "Waiting for model...";
+      cfg.assignedStaff = [];
+      bedAssignmentMap.delete(bedId);
+      updateBedSnapshot();
+      updateBedTileStatus();
+      if(bedModal.style.display==="flex") renderBedWizard();
+      buildDoctorStrip();
+    }
     function ingest(reading){ const {patient_id,hr,spo2,sbp,rr}=reading; if(!patient_id) return; const ts=reading.ts?Number(reading.ts):Date.now(); if(!patients.has(patient_id)){ patients.set(patient_id,{history:[],last:null,trend:null}); ensureSlot(patient_id); }
       if(!assignmentMap.has(patient_id)) assignmentMap.set(patient_id, ts);
       const p=patients.get(patient_id);
@@ -478,9 +584,12 @@
         <div class="trend ${cls}"><span class="material-symbols-rounded">${icon}</span></div>
         <div class="v">${val}</div>
       </div>`; }
-    function render(){ stripEl.innerHTML=""; for(let i=0;i<4;i++){ const pid=slots[i]; const p=pid?patients.get(pid):null; const last=p?.last; const tr=p?.trend||{hr:"flat",spo2:"flat",sbp:"flat",rr:"flat"}; const safeNum=n=>Number.isFinite(n)?n:"–";
+    function render(){
+      refillSlotsFromQueue();
+      stripEl.innerHTML="";
+      for(let i=0;i<4;i++){ const pid=slots[i]; const p=pid?patients.get(pid):null; const last=p?.last; const tr=p?.trend||{hr:"flat",spo2:"flat",sbp:"flat",rr:"flat"}; const safeNum=n=>Number.isFinite(n)?n:"–";
         const bpText = last ? `${safeNum(last?.sbp)}/${safeNum(last?.dbp)}` : "–/–";
-        const card=document.createElement("div"); card.className=`card mon-${i+1}`; card.innerHTML=`
+        const card=document.createElement("div"); card.className=`card mon-${i+1} draggable-card`; card.draggable = true; card.dataset.pid = pid || ""; card.innerHTML=`
           <div class="card-head">
             <div>
               <div class="mon-tag">Monitor ${i+1}</div>
@@ -499,6 +608,11 @@
             <span>${last ? `Live ${new Date(last.ts).toLocaleTimeString()}` : "Waiting for data"}</span>
             ${last?.note ? `<span>• ${last.note}</span>` : ""}
           </div>`;
+        card.addEventListener("dragstart", (e)=>{
+          if(!pid) return;
+          e.dataTransfer.setData("text/plain", pid);
+          e.dataTransfer.effectAllowed = "move";
+        });
         stripEl.appendChild(card); }
     }
     function formatDuration(ms){ const s=Math.max(0,Math.floor(ms/1000)); const h=Math.floor(s/3600); const m=Math.floor((s%3600)/60); const rem=s%60; if(h>0) return `${h}h ${m}m`; if(m>0) return `${m}m ${rem}s`; return `${rem}s`; }
@@ -544,8 +658,7 @@
           displayName,
           patientIdDisplay: assigned ? `Patient ID: ${pid || "—"}` : "Patient ID: —",
           name: assigned ? (cfg?.name || null) : null,
-          doctor: cfg?.doctor || null,
-          nurse: cfg?.nurse || null,
+          staff: Array.isArray(cfg?.assignedStaff) ? cfg.assignedStaff : [],
           complaint: assigned ? (cfg?.complaint || "—") : "—",
           diagnosis: assigned ? (cfg?.diagnosis || "—") : "—",
           pain: assigned ? painText : "—",
@@ -564,6 +677,35 @@
         };
       });
       snapshotEl.textContent = JSON.stringify(bedsSnapshot);
+    }
+    function updateBedTileStatus(){
+      const bedStatusMap = {
+        bed1: bed1Status,
+        bed2: bed2Status,
+        bed3: bed3Status
+      };
+      beds.forEach((bedId)=>{
+        const badge = bedStatusMap[bedId];
+        if(!badge) return;
+        const occupied = Boolean(bedConfig[bedId]?.assigned);
+        badge.textContent = occupied ? "Occupied" : "Available";
+        badge.classList.toggle("occupied", occupied);
+        badge.classList.toggle("available", !occupied);
+      });
+    }
+    function renderAssignedStaffList(targetEl, assigned){
+      if(!targetEl) return;
+      const list = Array.isArray(assigned) ? assigned : [];
+      if(!list.length){
+        targetEl.innerHTML = `<div class="staff-empty">No staff assigned yet. Drag team members from the roster.</div>`;
+        return;
+      }
+      targetEl.innerHTML = list.map((name)=>{
+        const staff = doctorRoster.find((doc)=>doc.name === name);
+        const img = staff?.img || "Dr_Drake_Ramoray.png";
+        const role = staff?.role || "Staff";
+        return `<div class="staff-chip"><img src="${img}" alt="${name}" /><div class="meta">${name}<span>${role}</span></div></div>`;
+      }).join("");
     }
     function renderBedWizard(){
       const cfg=bedConfig[selectedBed] || bedConfig.bed1;
@@ -588,9 +730,9 @@
       bedPainEl.textContent = cfg.assigned ? painText : "—";
       bedInjuryEl.textContent = cfg.assigned ? injuryText : "—";
       bedOxygenEl.textContent = cfg.assigned ? oxygenText : "—";
-      bedNurseEl.textContent = cfg.nurse;
-      bedDoctorEl.textContent = cfg.doctor;
       bedPredictionText.textContent = `Prediction: ${cfg.prediction}`;
+      renderAssignedStaffList(assignedStaffList, cfg.assignedStaff);
+      if(clearBedBtn) clearBedBtn.disabled = !cfg.assigned;
       const assignTs = bedAssignmentMap.get(selectedBed);
       const now = Date.now();
       bedTimeInEl.textContent = assignTs ? formatTimestamp(assignTs) : "—";
@@ -603,6 +745,7 @@
         ${vitalTile("Temp", Number.isFinite(tempVal) ? `${tempVal.toFixed(1)} °C` : "—", tr.temp)}
       ` : `<div style="font-size:14px; color:var(--muted);">Bed 1 is vacant. Assign a patient to see vitals.</div>`;
       updateBedSnapshot();
+      updateBedTileStatus();
     }
     function setStatus(state,text){
       connText.textContent=text;
@@ -633,7 +776,7 @@
       client.on("message",(_topic,payload)=>{ try{ const data=JSON.parse(new TextDecoder().decode(payload)); ingest(data); }catch(err){ console.warn("Bad payload",err); } });
     }
     function disconnectMQTT(){ manualDisconnect=true; if(client){ client.end(true); client=null; } setStatus("disconnected","Disconnected (manual)"); }
-    function clearData(){ patients.clear(); for(let i=0;i<slots.length;i++) slots[i]=null; render(); }
+    function clearData(){ patients.clear(); for(let i=0;i<slots.length;i++) slots[i]=null; patientQueue.length=0; render(); }
     settingsBtn.addEventListener("click", ()=> { modal.style.display="flex"; });
     closeModal.addEventListener("click", ()=> { modal.style.display="none"; });
     modal.addEventListener("click", (e)=>{ if(e.target===modal) modal.style.display="none"; });
@@ -645,9 +788,9 @@
       const cfg = bedConfig[bedId];
       if(cfg?.background && bedModalPane) bedModalPane.style.backgroundImage = `url("${cfg.background}")`;
       if(cfg?.icon && bedIconImg) bedIconImg.src = cfg.icon;
-      if(cfg?.doctor) selectedDoctor = cfg.doctor;
       updateAvailablePatients();
       buildDoctorStrip();
+      if(staffModal && staffModal.style.display==="flex") buildStaffModal();
       bedModal.style.display="flex";
       renderBedWizard();
       updateBedSnapshot();
@@ -655,12 +798,51 @@
     bed1Tile?.addEventListener("click", ()=>openBed("bed1"));
     bed2Tile?.addEventListener("click", ()=>openBed("bed2"));
     bed3Tile?.addEventListener("click", ()=>openBed("bed3"));
+    [bed1Tile, bed2Tile, bed3Tile].forEach((tile, idx)=>{
+      if(!tile) return;
+      const bedId = `bed${idx+1}`;
+      tile.addEventListener("dragover", (e)=>{ e.preventDefault(); tile.classList.add("drop-target"); });
+      tile.addEventListener("dragleave", ()=>{ tile.classList.remove("drop-target"); });
+      tile.addEventListener("drop", (e)=>{
+        e.preventDefault();
+        tile.classList.remove("drop-target");
+        const pid = e.dataTransfer.getData("text/plain");
+      if(pid) {
+        assignPatientToBed(pid, bedId);
+        render();
+        openBed(bedId);
+      }
+      });
+    });
     closeBedModal?.addEventListener("click", ()=>{ bedModal.style.display="none"; });
     bedModal?.addEventListener("click", (e)=>{ if(e.target===bedModal) bedModal.style.display="none"; });
-    document.getElementById("assignSelected")?.addEventListener("click", ()=>{
-      const pid = document.getElementById("patientSelect")?.value;
-      if(!pid) { alert("Select a patient from monitors first."); return; }
-      assignPatientToBed(pid, selectedBed);
+    openStaffAssignBtn?.addEventListener("click", ()=>{
+      buildStaffModal();
+      staffModal.style.display = "flex";
+    });
+    closeStaffModalBtn?.addEventListener("click", ()=>{ staffModal.style.display = "none"; });
+    staffModal?.addEventListener("click", (e)=>{ if(e.target===staffModal) staffModal.style.display="none"; });
+    function handleStaffModalDragOver(e){
+      e.preventDefault();
+      staffModalDropzone?.classList.add("drop-active");
+    }
+    function handleStaffModalDragLeave(){
+      staffModalDropzone?.classList.remove("drop-active");
+    }
+    function handleStaffModalDrop(e){
+      e.preventDefault();
+      staffModalDropzone?.classList.remove("drop-active");
+      const name = e.dataTransfer.getData("text/staff");
+      if(name) assignStaffToBed(name, selectedBed);
+    }
+    staffModalDropzone?.addEventListener("dragover", handleStaffModalDragOver);
+    staffModalDropzone?.addEventListener("dragleave", handleStaffModalDragLeave);
+    staffModalDropzone?.addEventListener("drop", handleStaffModalDrop);
+    staffModalAssigned?.addEventListener("dragover", handleStaffModalDragOver);
+    staffModalAssigned?.addEventListener("dragleave", handleStaffModalDragLeave);
+    staffModalAssigned?.addEventListener("drop", handleStaffModalDrop);
+    clearBedBtn?.addEventListener("click", ()=>{
+      clearBedAssignment(selectedBed);
     });
     setInterval(()=>{ if(bedModal.style.display==="flex") renderBedWizard(); }, 1000);
     clientInput.value = `sc-dashboard-${randomId()}`;
@@ -668,31 +850,74 @@
     render();
     updateAvailablePatients();
     updateBedSnapshot();
+    updateBedTileStatus();
 
-    function assignDoctor(name){
-      const cfg = bedConfig[selectedBed];
-      selectedDoctor = name;
-      if(cfg) cfg.doctor = name;
+    function assignStaffToBed(name, bedId){
+      if(!name) return;
+      const target = bedId || selectedBed || "bed1";
+      const cfg = bedConfig[target];
+      if(!cfg) return;
+      if(!Array.isArray(cfg.assignedStaff)) cfg.assignedStaff = [];
+      const prevBed = staffBusyMap.get(name);
+      if(prevBed && prevBed !== target){
+        const prevLabel = bedConfig[prevBed]?.label || prevBed;
+        const nextLabel = cfg.label || target;
+        const ok = window.confirm(`${name} is currently assigned to ${prevLabel}. Reassign to ${nextLabel}?`);
+        if(!ok) return;
+        const prevCfg = bedConfig[prevBed];
+        if(prevCfg?.assignedStaff){
+          prevCfg.assignedStaff = prevCfg.assignedStaff.filter((n)=>n !== name);
+        }
+      }
+      if(!cfg.assignedStaff.includes(name)) cfg.assignedStaff.push(name);
+      staffBusyMap.set(name, target);
       if(bedModal.style.display==="flex") renderBedWizard();
-      document.querySelectorAll(".doctor-card").forEach(card=>{
-        card.classList.toggle("selected", card.dataset.name===name);
-      });
+      if(staffModal && staffModal.style.display==="flex") buildStaffModal();
+      buildDoctorStrip();
     }
     function buildDoctorStrip(){
       doctorStrip.innerHTML = "";
-      const cfg = bedConfig[selectedBed];
-      const currentDoc = cfg?.doctor || selectedDoctor;
       doctorRoster.forEach(doc=>{
         const card = document.createElement("div");
         card.className = "team-card doctor-card";
         card.dataset.name = doc.name;
         card.title = doc.name;
-        const roleLabel = doc.role ? ` · ${doc.role}` : "";
-        card.innerHTML = `<img src="${doc.img}" alt="${doc.name}" /><div class="label">${doc.name}${roleLabel}</div>`;
-        if(doc.name === currentDoc) card.classList.add("selected");
-        card.addEventListener("click", ()=>assignDoctor(doc.name));
+        const busyBed = staffBusyMap.get(doc.name);
+        const busyLabel = busyBed ? `Busy: ${bedConfig[busyBed]?.label || busyBed}` : "Available";
+        card.innerHTML = `<img src="${doc.img}" alt="${doc.name}" /><div class="staff-badge ${busyBed ? "busy" : ""}">${busyLabel}</div>`;
+        card.draggable = true;
+        card.addEventListener("dragstart", (e)=>{
+          e.dataTransfer.setData("text/staff", doc.name);
+          e.dataTransfer.effectAllowed = "copy";
+        });
         doctorStrip.appendChild(card);
       });
+    }
+    function buildStaffModal(){
+      if(!staffModal) return;
+      const cfg = bedConfig[selectedBed];
+      renderAssignedStaffList(staffModalAssigned, cfg?.assignedStaff);
+      if(staffRosterGrid){
+        staffRosterGrid.innerHTML = "";
+        doctorRoster.forEach((doc)=>{
+          const card = document.createElement("div");
+          card.className = "team-card doctor-card";
+          card.dataset.name = doc.name;
+          card.title = doc.name;
+          const busyBed = staffBusyMap.get(doc.name);
+          const busyLabel = busyBed ? `Busy: ${bedConfig[busyBed]?.label || busyBed}` : "Available";
+          card.innerHTML = `<img src="${doc.img}" alt="${doc.name}" /><div class="staff-badge ${busyBed ? "busy" : ""}">${busyLabel}</div>`;
+          card.draggable = true;
+          card.addEventListener("dragstart", (e)=>{
+            e.dataTransfer.setData("text/staff", doc.name);
+            e.dataTransfer.effectAllowed = "copy";
+          });
+          staffRosterGrid.appendChild(card);
+        });
+      }
+      if(staffModalDropzone){
+        staffModalDropzone.textContent = `Drop staff here to assign to ${cfg?.label || "this bed"}`;
+      }
     }
     function assignPatientToBed(pid, bedId){
       if(!pid) return;
@@ -709,14 +934,15 @@
       cfg.injury = p?.last?.injury ?? null;
       cfg.oxygenSupport = p?.last?.oxygenSupport || "Room Air";
       cfg.temperature = p?.last?.tempC ?? null;
-      cfg.doctor = cfg.doctor === "Select doctor" ? (selectedDoctor || cfg.doctor) : cfg.doctor;
       cfg.assigned = true;
       cfg.age = p?.last?.age ?? null;
       cfg.gender = p?.last?.gender ?? null;
       bedAssignmentMap.set(target, now);
+      removeFromWaiting(pid);
       ensureSlot(pid);
       lastPredictionTs[target] = 0; // force immediate prediction on next loop
       renderBedWizard();
+      buildDoctorStrip();
     }
     async function getGradioClient(){
       if(gradioClientPromise) return gradioClientPromise;
