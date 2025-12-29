@@ -185,10 +185,10 @@
 
   <div class="beds-full">
     <div class="beds-stack">
-      <img src="Monitors.png" alt="Monitors" class="monitors-img" />
-      <img src="Bed1.png" alt="Bed 1" id="bed1Tile" style="cursor:pointer;" />
-      <img src="Bed2.png" alt="Bed 2" id="bed2Tile" style="cursor:pointer;" />
-      <img src="Bed3.png" alt="Bed 3" id="bed3Tile" style="cursor:pointer;" />
+      <img src="./Monitors.png" alt="Monitors" class="monitors-img" />
+      <img src="./Bed1.png" alt="Bed 1" id="bed1Tile" style="cursor:pointer;" />
+      <img src="./Bed2.png" alt="Bed 2" id="bed2Tile" style="cursor:pointer;" />
+      <img src="./Bed3.png" alt="Bed 3" id="bed3Tile" style="cursor:pointer;" />
     </div>
   </div>
 
@@ -227,7 +227,7 @@
       <button class="close-pill" id="closeBedModal"><span class="material-symbols-rounded">close</span></button>
       <div class="bed-modal-inner">
         <div class="shell patient-card">
-          <div class="bed-icon"><img id="bedIconImg" src="Bed1-Icon.png" alt="Bed icon"></div>
+          <div class="bed-icon"><img id="bedIconImg" src="./Bed1-Icon.png" alt="Bed icon"></div>
           <div class="wizard-meta">
             <strong id="bedPatientName">(vacant) • Bed 1</strong>
             <div id="bedPatientId">Patient ID: —</div>
@@ -381,8 +381,8 @@
         temperature: null,
         assigned: false,
         prediction: "Waiting for model...",
-        background: "Bed1_Background.png",
-        icon: "Bed1-Icon.png",
+        background: "./Bed1_Background.png",
+        icon: "./Bed1-Icon.png",
         label: "Bed 1"
       },
       bed2: {
@@ -400,8 +400,8 @@
         temperature: null,
         assigned: false,
         prediction: "Waiting for model...",
-        background: "Bed2_Background.png",
-        icon: "Bed2-Icon.png",
+        background: "./Bed2_Background.png",
+        icon: "./Bed2-Icon.png",
         label: "Bed 2"
       },
       bed3: {
@@ -419,8 +419,8 @@
         temperature: null,
         assigned: false,
         prediction: "Waiting for model...",
-        background: "Bed3_Background.png",
-        icon: "Bed3-Icon.png",
+        background: "./Bed3_Background.png",
+        icon: "./Bed3-Icon.png",
         label: "Bed 3"
       }
     };
@@ -428,12 +428,12 @@
     const oxygenModes = ["Room Air","Nasal Cannula","Mask","Non-rebreather","Bag-valve-mask","Ventilated"];
     const metricIcons = { HR:"favorite", "SPO₂":"bloodtype", SBP:"monitor_heart", RR:"air", BP:"monitor_heart", Temp:"device_thermostat" };
     const doctorRoster = [
-      {name:"Drake", img:"Dr_Drake_Ramoray.png", role:"Doctor"},
-      {name:"Mina", img:"Dr_Drake_Ramoray.png", role:"Doctor"},
-      {name:"Salma", img:"Dr_Drake_Ramoray.png", role:"Nurse"},
-      {name:"Karim", img:"Dr_Drake_Ramoray.png", role:"Nurse"},
-      {name:"Rania", img:"Dr_Drake_Ramoray.png", role:"Nurse"},
-      {name:"Omar", img:"Dr_Drake_Ramoray.png", role:"Nurse"},
+      {name:"Drake", img:"./Dr_Drake_Ramoray.png", role:"Doctor"},
+      {name:"Mina", img:"./Dr_Drake_Ramoray.png", role:"Doctor"},
+      {name:"Salma", img:"./Dr_Drake_Ramoray.png", role:"Nurse"},
+      {name:"Karim", img:"./Dr_Drake_Ramoray.png", role:"Nurse"},
+      {name:"Rania", img:"./Dr_Drake_Ramoray.png", role:"Nurse"},
+      {name:"Omar", img:"./Dr_Drake_Ramoray.png", role:"Nurse"},
     ];
     let selectedDoctor = doctorRoster[0].name;
     let availablePatients = [];
