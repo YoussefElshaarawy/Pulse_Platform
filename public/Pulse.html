@@ -109,6 +109,13 @@
     .team-strip{ display:flex; gap:12px; flex-wrap:wrap; justify-content:center; padding:18px 10px 6px; }
     .team-card{ width:168px; background:transparent; border:none; border-radius:0; padding:0; box-shadow:none; cursor:grab; }
     .team-card img{ width:100%; border-radius:0; display:block; box-shadow:none; }
+    /* Leaderboard / Team Simulation */
+    #teamSimContainer{ display:flex; align-items:flex-start; gap:12px; margin:12px 0; }
+    .leaderboard{ background:var(--card); border:1px solid var(--border); padding:10px; border-radius:12px; display:flex; flex-direction:column; gap:8px; min-width:260px; box-shadow:var(--shadow); }
+    .leaderboard .row{ display:flex; justify-content:space-between; align-items:center; gap:12px; padding:6px 8px; border-radius:8px; }
+    .leaderboard .name{ font-weight:800; font-size:13px; }
+    .leaderboard .metrics{ font-size:12px; color:var(--muted); }
+    .leaderboard .score{ font-weight:900; color:var(--accent); }
     /* Modal glass */
     .modal-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,0.25); display:none; align-items:center; justify-content:center; padding:16px; z-index:20; backdrop-filter: blur(7px); }
     .modal{ width:min(640px, 100%); background:rgba(255,255,255,0.7); border-radius:20px; border:1px solid rgba(255,255,255,0.5); box-shadow:0 28px 64px rgba(0,0,0,0.22); padding:22px; display:flex; flex-direction:column; gap:14px; backdrop-filter: blur(18px) saturate(1.5); }
@@ -238,6 +245,11 @@
     </div>
   </div>
 
+  <div id="teamSimContainer">
+    <div id="teamControls" style="display:flex;align-items:center;gap:10px; padding-left:12px;">
+      <button class="btn" id="openTeamSim"><span class="material-symbols-rounded">groups</span> Team Leaderboard</button>
+    </div>
+  </div>
   <div class="team-strip" id="doctorStrip"></div>
   <div id="bed-snapshot" style="display:none;"></div>
 
@@ -385,6 +397,29 @@
           <div class="section-title" style="margin-bottom:8px;"><span class="material-symbols-rounded">assignment_ind</span> Assigned to Bed</div>
           <div class="assigned-staff" id="staffModalAssigned"></div>
           <div class="staff-dropzone" id="staffModalDropzone">Drop staff here to assign</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="teamModal" style="display:none;">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="teamModalTitle">
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+        <h3 id="teamModalTitle">Team Simulator & Leaderboard</h3>
+        <button class="btn" id="closeTeamModal" title="Close"><span class="material-symbols-rounded">close</span></button>
+      </div>
+      <div style="display:flex; gap:14px;">
+        <div style="flex:1; min-width:320px;">
+          <div class="section-title"><span class="material-symbols-rounded">leaderboard</span> Leaderboard</div>
+          <div id="leaderboardFull" class="leaderboard"></div>
+        </div>
+        <div style="width:320px;">
+          <div class="section-title"><span class="material-symbols-rounded">insights</span> Metrics</div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div style="font-size:13px;color:var(--muted);">Total Assigned Patients: <b id="totalAssigned">0</b></div>
+            <div style="font-size:13px;color:var(--muted);">Average Assigned (all): <b id="avgResponseAll">—</b></div>
+          </div>
+          <div style="margin-top:18px; text-align:right;"><button class="btn" id="resetTeamStats">Reset Stats</button></div>
         </div>
       </div>
     </div>
@@ -539,6 +574,87 @@
       {name:"Rania", img:"RN_Rania.png", role:"Nurse"},
       {name:"Omar", img:"RN_Omar.png", role:"Nurse"},
     ];
+    const teamStats = new Map(); // name -> {assignedCount, completedRemovals, totalAssignedMs, avgAssignedMs, score}
+    const staffAssignmentMap = new Map(); // name -> {bed, assignedAt, counted}
+    doctorRoster.forEach(d => teamStats.set(d.name, { assignedCount:0, completedRemovals:0, totalAssignedMs:0, avgAssignedMs:0, score:0 }));
+
+    function computeTeamScore(stats, liveMs=0){
+      const minutes = ((stats.totalAssignedMs || 0) + liveMs) / 60000;
+      const timeScore = Math.min(60, Math.round(minutes * 2));
+      return Math.round((stats.assignedCount * 10) + timeScore);
+    }
+    function getTeamStats(name){
+      return teamStats.get(name) || { assignedCount:0, completedRemovals:0, totalAssignedMs:0, avgAssignedMs:0, score:0 };
+    }
+    function getActiveAssignmentStart(name, bedId){
+      const entry = staffAssignmentMap.get(name);
+      if(!entry || entry.bed !== bedId) return null;
+      const bedStart = bedAssignmentMap.get(bedId);
+      if(!bedStart) return null;
+      const staffStart = entry.assignedAt || bedStart;
+      return Math.max(staffStart, bedStart);
+    }
+    function getActiveAssignedMs(name){
+      const entry = staffAssignmentMap.get(name);
+      if(!entry) return 0;
+      const start = getActiveAssignmentStart(name, entry.bed);
+      if(!start) return 0;
+      return Math.max(0, Date.now() - start);
+    }
+    function finalizeStaffAssignment(name, bedId, now){
+      const start = getActiveAssignmentStart(name, bedId);
+      if(start){
+        const stats = getTeamStats(name);
+        stats.totalAssignedMs = (stats.totalAssignedMs || 0) + (now - start);
+        stats.completedRemovals = (stats.completedRemovals || 0) + 1;
+        stats.avgAssignedMs = Math.round(stats.totalAssignedMs / stats.completedRemovals);
+        stats.score = computeTeamScore(stats);
+        teamStats.set(name, stats);
+      }
+      staffAssignmentMap.delete(name);
+    }
+    function formatDurationShort(ms){
+      if(!Number.isFinite(ms) || ms <= 0) return "—";
+      const s = Math.round(ms / 1000);
+      if(s < 60) return `${s}s`;
+      const m = Math.floor(s / 60);
+      const rem = s % 60;
+      return `${m}m ${rem}s`;
+    }
+    function updateLeaderboardUI(){
+      const lb = document.getElementById('leaderboardFull');
+      if(lb){
+        const all = Array.from(teamStats.entries()).map(([name,st])=>{
+          const liveMs = getActiveAssignedMs(name);
+          return { name, stats: st, score: computeTeamScore(st, liveMs), liveMs };
+        });
+        all.sort((a,b)=>b.score - a.score);
+        lb.innerHTML = all.map(a=>{
+          const avg = a.stats.completedRemovals ? formatDurationShort(a.stats.avgAssignedMs) : '—';
+          return `<div class="row"><div><div class="name">${a.name}</div><div class="metrics">Assigned: ${a.stats.assignedCount} • Avg: ${avg}</div></div><div class="score">${a.score}</div></div>`;
+        }).join('');
+      }
+      const totalAssignedEl = document.getElementById('totalAssigned');
+      const avgAllEl = document.getElementById('avgResponseAll');
+      if(totalAssignedEl){
+        const total = Array.from(teamStats.values()).reduce((s,st)=>s+st.assignedCount,0);
+        totalAssignedEl.textContent = total;
+      }
+      if(avgAllEl){
+        const totals = Array.from(teamStats.values()).reduce((acc,st)=>{ acc.count += st.completedRemovals; acc.sum += st.totalAssignedMs; return acc; }, {count:0, sum:0});
+        avgAllEl.textContent = totals.count ? formatDurationShort(totals.sum / totals.count) : '—';
+      }
+    }
+    document.addEventListener('click', (e)=>{
+      const target = e.target?.closest && e.target.closest('button');
+      if(target && target.id === 'openTeamSim'){ const tm = document.getElementById('teamModal'); if(tm) tm.style.display='flex'; updateLeaderboardUI(); }
+      if(target && target.id === 'closeTeamModal'){ const tm = document.getElementById('teamModal'); if(tm) tm.style.display='none'; }
+      if(target && target.id === 'resetTeamStats'){
+        teamStats.forEach((v,k)=> teamStats.set(k,{assignedCount:0,completedRemovals:0,totalAssignedMs:0,avgAssignedMs:0,score:0}));
+        staffAssignmentMap.clear();
+        updateLeaderboardUI();
+      }
+    });
     const staffBusyMap = new Map(); // name -> bedId
     let availablePatients = [];
     let gradioClientPromise = null;
@@ -598,7 +714,9 @@
     async function clearBedAssignment(bedId){
       const cfg = bedConfig[bedId];
       if(!cfg) return;
+      const now = Date.now();
       (cfg.assignedStaff || []).forEach((name)=>{
+        finalizeStaffAssignment(name, bedId, now);
         if(staffBusyMap.get(name) === bedId) staffBusyMap.delete(name);
       });
       cfg.patientId = null;
@@ -633,6 +751,7 @@
       updateBedTileStatus();
       if(bedModal.style.display==="flex") renderBedWizard();
       buildDoctorStrip();
+      updateLeaderboardUI();
     }
     async function syncBedAssignment(bedId, patientId, occupied){
       const bedNumber = bedIdMap[bedId] || null;
@@ -1050,11 +1169,13 @@
       if(!cfg) return;
       if(!Array.isArray(cfg.assignedStaff)) cfg.assignedStaff = [];
       const prevBed = staffBusyMap.get(name);
+      const now = Date.now();
       if(prevBed && prevBed !== target){
         const prevLabel = bedConfig[prevBed]?.label || prevBed;
         const nextLabel = cfg.label || target;
         const ok = window.confirm(`${name} is currently assigned to ${prevLabel}. Reassign to ${nextLabel}?`);
         if(!ok) return;
+        finalizeStaffAssignment(name, prevBed, now);
         const prevCfg = bedConfig[prevBed];
         if(prevCfg?.assignedStaff){
           prevCfg.assignedStaff = prevCfg.assignedStaff.filter((n)=>n !== name);
@@ -1062,9 +1183,19 @@
       }
       if(!cfg.assignedStaff.includes(name)) cfg.assignedStaff.push(name);
       staffBusyMap.set(name, target);
+      if(cfg.assigned){
+        const stats = getTeamStats(name);
+        stats.assignedCount = (stats.assignedCount || 0) + 1;
+        stats.score = computeTeamScore(stats);
+        teamStats.set(name, stats);
+        staffAssignmentMap.set(name, { bed: target, assignedAt: now, counted: true });
+      }else{
+        staffAssignmentMap.set(name, { bed: target, assignedAt: now, counted: false });
+      }
       if(bedModal.style.display==="flex") renderBedWizard();
       if(staffModal && staffModal.style.display==="flex") buildStaffModal();
       buildDoctorStrip();
+      updateLeaderboardUI();
     }
     function buildDoctorStrip(){
       doctorStrip.innerHTML = "";
@@ -1133,6 +1264,15 @@
       cfg.gender = p?.last?.gender ?? null;
       cfg.predictionTs = null;
       bedAssignmentMap.set(target, now);
+      (cfg.assignedStaff || []).forEach((name)=>{
+        const entry = staffAssignmentMap.get(name);
+        if(entry && entry.bed === target && entry.counted) return;
+        const stats = getTeamStats(name);
+        stats.assignedCount = (stats.assignedCount || 0) + 1;
+        stats.score = computeTeamScore(stats);
+        teamStats.set(name, stats);
+        staffAssignmentMap.set(name, { bed: target, assignedAt: (entry?.assignedAt || now), counted: true });
+      });
       removeFromWaiting(pid);
       ensureSlot(pid);
       lastPredictionTs[target] = 0; // force immediate prediction on next loop
@@ -1141,6 +1281,7 @@
       fetchBedNotes(target, pid);
       renderBedWizard();
       buildDoctorStrip();
+      updateLeaderboardUI();
     }
     async function getGradioClient(){
       if(gradioClientPromise) return gradioClientPromise;
@@ -1193,6 +1334,7 @@
     }
     setInterval(()=>{ beds.forEach(runTriagePrediction); }, PREDICT_INTERVAL_MS);
     buildDoctorStrip();
+    updateLeaderboardUI();
   </script>
 </body>
 </html>
