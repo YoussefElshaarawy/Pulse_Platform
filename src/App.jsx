@@ -29,69 +29,160 @@ function App() {
   const [messages, setMessages] = useState([]);
   const [tps, setTps] = useState(null);
   const [numTokens, setNumTokens] = useState(null);
-  const [dashboardRefreshOn, setDashboardRefreshOn] = useState(false);
+  const [extraPromptEnabled, setExtraPromptEnabled] = useState(false);
+  const [extraPrompt, setExtraPrompt] = useState("");
+  const [extraPromptDraft, setExtraPromptDraft] = useState("");
+  const [showExtraPromptModal, setShowExtraPromptModal] = useState(false);
+  const [liveDashboardText, setLiveDashboardText] = useState("");
+  const defaultInstruction = `You are PulseCopilot. Use ONLY the DASHBOARD STATE below.
 
-  function readPulseSnapshot() {
+Rules:
+- No guessing. If missing, say "unknown".
+- Staff assignments are authoritative ONLY from each bed's "Staff:" line.
+- Ignore the staff roster for assignments; it is informational only.
+- If the roster conflicts with the bed's Staff line, state: "Staff assignment conflict: bed says X, roster says Y."
+- "occupied" means true; "not occupied" means false.
+- Do not repeat the dashboard text.
+
+Answer style:
+- 1–3 short sentences max.
+- Only add bullets if asked.
+- Ask for missing data only if blocked.
+
+If asked "most urgent":
+- Only consider occupied beds.
+- Abnormal vitals: SPO2 < 92, RR > 24, HR > 120, SBP < 90.
+- Tie-breaker: triage rating (1 = most urgent), then longest time in bed.`;
+
+  function getPulseDocument() {
     const iframe = document.getElementById("pulse");
     if (!iframe || !iframe.contentWindow) return null;
+    return iframe.contentDocument || iframe.contentWindow.document;
+  }
 
-    try {
-      const doc = iframe.contentDocument || iframe.contentWindow.document;
-      const cards = [...doc.querySelectorAll(".monitor-strip .card")];
-      if (cards.length === 0) return null;
-
-      return cards.map((card) => {
-        const label = card.querySelector(".mon-tag")?.textContent?.trim() || null;
-        const patientId = card.querySelector(".pid")?.textContent?.trim() || null;
-        const updated = card.querySelector(".updated")?.textContent?.trim() || null;
-        const metrics = {};
-
-        card.querySelectorAll(".metric").forEach((metric) => {
-          const labelNode = metric.querySelector(".k");
-          const iconText = labelNode?.querySelector(".material-symbols-rounded")?.textContent || "";
-          let labelText = labelNode?.textContent || "";
-          labelText = labelText.replace(iconText, "").trim();
-          const valueText = metric.querySelector(".v")?.textContent?.trim() || null;
-          if (labelText) metrics[labelText] = valueText;
-        });
-
-        const statusRow = card.querySelector(".status-row");
-        const statusSpans = statusRow
-          ? [...statusRow.querySelectorAll("span")]
-              .filter((span) => !span.classList.contains("status-dot"))
-              .map((span) => span.textContent?.trim())
-              .filter(Boolean)
-          : [];
-
-        return {
-          label,
-          patientId,
-          updated,
-          metrics,
-          status: statusSpans[0] || null,
-          note: statusSpans[1] || null,
-        };
+  function readWaitingArea(doc) {
+    const cards = [...doc.querySelectorAll(".monitor-strip .card")];
+    if (!cards.length) return [];
+    return cards.map((card) => {
+      const label = card.querySelector(".mon-tag")?.textContent?.trim() || "Unknown";
+      const patientId = card.querySelector(".pid")?.textContent?.trim() || "—";
+      const updated = card.querySelector(".updated")?.textContent?.trim() || "—";
+      const metrics = {};
+      card.querySelectorAll(".metric").forEach((metric) => {
+        const labelNode = metric.querySelector(".k");
+        const iconText = labelNode?.querySelector(".material-symbols-rounded")?.textContent || "";
+        let labelText = labelNode?.textContent || "";
+        labelText = labelText.replace(iconText, "").trim();
+        const valueText = metric.querySelector(".v")?.textContent?.trim() || "—";
+        if (labelText) metrics[labelText] = valueText;
       });
-    } catch (error) {
-      return null;
+      const statusRow = card.querySelector(".status-row");
+      const statusSpans = statusRow
+        ? [...statusRow.querySelectorAll("span")]
+            .filter((span) => !span.classList.contains("status-dot"))
+            .map((span) => span.textContent?.trim())
+            .filter(Boolean)
+        : [];
+      return {
+        label,
+        patientId,
+        updated,
+        metrics,
+        status: statusSpans[0] || "—",
+        note: statusSpans[1] || "—",
+      };
+    });
+  }
+
+  function readBedsSnapshot(doc) {
+    const snapshotEl = doc.getElementById("bed-snapshot");
+    if (!snapshotEl?.textContent) return [];
+    try {
+      const parsed = JSON.parse(snapshotEl.textContent);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
     }
   }
 
-  function buildDashboardSnapshot() {
-    const lastUser = [...messages].reverse().find((msg) => msg.role === "user");
-    const lastAssistant = [...messages].reverse().find((msg) => msg.role === "assistant");
+  function readStaffRoster(doc) {
+    const cards = [...doc.querySelectorAll("#doctorStrip .doctor-card")];
+    return cards.map((card) => ({
+      name: card.dataset.name || card.title || "Unknown",
+      role: card.dataset.role || "Staff",
+      status: card.dataset.status || "Unknown",
+      bed: card.dataset.bed || "—",
+    }));
+  }
 
-    return {
-      ts: new Date().toISOString(),
-      modelStatus: status,
-      isRunning,
-      tps,
-      numTokens,
-      messageCount: messages.length,
-      lastUserMessage: lastUser?.content || null,
-      lastAssistantMessage: lastAssistant?.content || null,
-      pulseMonitors: readPulseSnapshot(),
-    };
+  function readConnectionStatus(doc) {
+    const connText = doc.getElementById("connText")?.textContent?.trim();
+    return connText || "Unknown";
+  }
+
+  function buildDashboardText() {
+    const doc = getPulseDocument();
+    if (!doc) return "Dashboard unavailable: Pulse iframe not ready.";
+
+    const waiting = readWaitingArea(doc);
+    const beds = readBedsSnapshot(doc);
+    const staff = readStaffRoster(doc);
+    const connection = readConnectionStatus(doc);
+    const ts = new Date().toISOString();
+
+    const waitingLines = waiting.length
+      ? waiting.map((card) => {
+          const metrics = Object.entries(card.metrics)
+            .map(([key, val]) => `${key}: ${val}`)
+            .join(", ");
+          const note = card.note ? ` (${card.note})` : "";
+          return `- ${card.label}: Patient ${card.patientId}; Updated ${card.updated}; ${metrics || "No vitals"}; Status ${card.status}${note}`;
+        })
+      : ["- No waiting area data."];
+
+    const bedLines = beds.length
+      ? beds.map((bed) => {
+          const vitals = bed?.vitals || {};
+          const vitalsText = [
+            `HR ${vitals.hr ?? "—"}`,
+            `SPO2 ${vitals.spo2 ?? "—"}`,
+            `RR ${vitals.rr ?? "—"}`,
+            `SBP ${vitals.sbp ?? "—"}`,
+            `DBP ${vitals.dbp ?? "—"}`,
+            `Temp ${vitals.temp ?? "—"}`,
+          ].join(", ");
+          const staffAssigned = Array.isArray(bed.staff_assigned) && bed.staff_assigned.length
+            ? bed.staff_assigned.join(", ")
+            : "No staff assigned";
+          const occupiedText = bed.occupied ? "occupied" : "not occupied";
+          return `- ${bed.label || bed.bed_id}: ${occupiedText}. Patient ${bed.patient_id || "—"}. Time in bed ${bed.time_in_bed_seconds ?? "—"}s. Vitals: ${vitalsText}. Triage ${bed.triage_rating_1_to_5 ?? "—"}. Prediction ${bed.prediction_text || "—"} at ${bed.prediction_ts_utc || "—"}. Staff: ${staffAssigned}.`;
+        })
+      : ["- No bed snapshot data."];
+
+    const staffLines = staff.length
+      ? staff.map((member) => {
+          const rawName = member.name || "Unknown";
+          const displayName = rawName.startsWith("Dr.") ? rawName : rawName;
+          const assignment = member.bed && member.bed !== "—" ? `assigned to ${member.bed}` : "not assigned yet";
+          const status = member.status === "Available" ? "available" : member.status.toLowerCase();
+          return `- ${displayName} is ${status} and ${assignment}.`;
+        })
+      : ["- No staff roster data."];
+
+    return [
+      "DASHBOARD STATE (LIVE SNAPSHOT)",
+      `Timestamp (UTC): ${ts}`,
+      `Connection status: ${connection}`,
+      "",
+      "A) WAITING AREA — MONITORS",
+      ...waitingLines,
+      "",
+      "B) BEDS — CURRENT STATUS",
+      ...bedLines,
+      "",
+      "C) STAFF — ROSTER & ASSIGNMENTS",
+      ...staffLines,
+    ].join("\n");
   }
 
   function onEnter(message) {
@@ -114,12 +205,26 @@ function App() {
     worker.current?.postMessage({ type: "reset" });
   }
 
-  function onToggleDashboardRefresh() {
-    setDashboardRefreshOn((prev) => !prev);
+  function onToggleExtraPrompt() {
+    if (extraPromptEnabled) {
+      setExtraPromptEnabled(false);
+      return;
+    }
+    setExtraPromptDraft(extraPrompt);
+    setShowExtraPromptModal(true);
   }
+
   useEffect(() => {
     resizeInput();
   }, [input]);
+
+  useEffect(() => {
+    if (!showExtraPromptModal) return;
+    const update = () => setLiveDashboardText(buildDashboardText());
+    update();
+    const intervalId = setInterval(update, 1000);
+    return () => clearInterval(intervalId);
+  }, [showExtraPromptModal]);
 
   function resizeInput() {
     if (!textareaRef.current) return;
@@ -187,12 +292,14 @@ function App() {
   useEffect(() => {
     if (messages.filter((x) => x.role === "user").length === 0) return;
     if (messages.at(-1).role === "assistant") return;
-    const snapshot = buildDashboardSnapshot();
-    const snapshotMessage = {
-      role: "system",
-      content: `[DASHBOARD_SNAPSHOT]\n${JSON.stringify(snapshot)}\n[/DASHBOARD_SNAPSHOT]`,
-    };
-    worker.current.postMessage({ type: "generate", data: [snapshotMessage, ...messages] });
+    const shouldAttach = extraPromptEnabled;
+    const dashboardText = shouldAttach ? buildDashboardText() : "";
+    const promptHead = extraPrompt.trim() || defaultInstruction;
+    const promptPieces = [promptHead, dashboardText].filter(Boolean);
+    const finalMessages = shouldAttach && promptPieces.length
+      ? [{ role: "system", content: promptPieces.join("\n\n") }, ...messages]
+      : messages;
+    worker.current.postMessage({ type: "generate", data: finalMessages });
   }, [messages, isRunning]);
 
   useEffect(() => {
@@ -296,11 +403,11 @@ function App() {
         <div className="flex items-center pr-3">
             <button
               type="button"
-              onClick={onToggleDashboardRefresh}
+              onClick={onToggleExtraPrompt}
               disabled={status !== "ready" || isRunning}
-              title="Refresh from dashboard"
+              title="Extra prompt"
               className={`mr-2 h-8 w-8 rounded-md border border-white/70 grid place-items-center shadow-[inset_0_1px_6px_rgba(255,255,255,0.7)] transition ${
-                dashboardRefreshOn
+                extraPromptEnabled
                   ? "bg-[#dbe9ff]/80 text-[#2b4c78]"
                   : "bg-white/60 text-gray-400 hover:bg-[#e9f1ff]"
               }`}
@@ -320,6 +427,73 @@ function App() {
       <p className="text-[10px] text-gray-400 text-center mb-3 px-4">
         NOTICE: This AI is a supportive tool for healthcare professionals. Final clinical decisions must be made by a qualified physician.
       </p>
+      {showExtraPromptModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
+          <div className="w-full max-w-[640px] rounded-2xl border border-white/60 bg-white/90 p-5 shadow-[0_20px_60px_rgba(15,23,42,0.25)] backdrop-blur-md">
+            <div className="flex items-center justify-between gap-4">
+              <h3 className="text-lg font-semibold text-[#2F3C55]">Extra system prompt</h3>
+              <button
+                type="button"
+                onClick={() => setShowExtraPromptModal(false)}
+                className="h-9 w-9 rounded-full border border-white/70 bg-white/70 text-gray-600 hover:bg-white"
+                title="Close"
+              >
+                ✕
+              </button>
+            </div>
+            <p className="mt-2 text-sm text-[#4E5B74]">
+              This text is prepended to every message while the toggle is on.
+            </p>
+            <textarea
+              className="mt-3 h-40 w-full resize-none rounded-xl border border-white/60 bg-white/70 p-3 text-sm text-[#2F3C55] outline-none"
+              placeholder="Paste the prompt you want to prepend."
+              value={extraPromptDraft}
+              onChange={(e) => setExtraPromptDraft(e.target.value)}
+            />
+            <div className="mt-4">
+              <div className="text-xs font-semibold uppercase tracking-wide text-[#4E5B74]">
+                Live dashboard prompt
+              </div>
+              <pre className="mt-2 max-h-56 overflow-auto rounded-xl border border-white/60 bg-white/70 p-3 text-[11px] leading-relaxed text-[#2F3C55] whitespace-pre-wrap">
+                {liveDashboardText || "Waiting for dashboard data..."}
+              </pre>
+            </div>
+            <div className="mt-4">
+              <div className="text-xs font-semibold uppercase tracking-wide text-[#4E5B74]">
+                Full system prompt preview
+              </div>
+              <pre className="mt-2 max-h-56 overflow-auto rounded-xl border border-white/60 bg-white/70 p-3 text-[11px] leading-relaxed text-[#2F3C55] whitespace-pre-wrap">
+                {[
+                  extraPromptDraft.trim(),
+                  liveDashboardText,
+                ]
+                  .filter(Boolean)
+                  .join("\n\n") || "Add an extra prompt to see the full preview."}
+              </pre>
+            </div>
+            <div className="mt-4 flex flex-wrap items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setShowExtraPromptModal(false)}
+                className="rounded-lg border border-white/70 bg-white/70 px-4 py-2 text-sm font-semibold text-[#4E5B74]"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setExtraPrompt(extraPromptDraft);
+                  setExtraPromptEnabled(true);
+                  setShowExtraPromptModal(false);
+                }}
+                className="rounded-lg bg-[#4F8DF6] px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(79,141,246,0.35)]"
+              >
+                Save & Enable
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   ) : (
     <div className="fixed w-screen h-screen bg-black text-white flex justify-center items-center text-center p-10">
