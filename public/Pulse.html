@@ -111,7 +111,6 @@
     .team-card img{ width:100%; border-radius:0; display:block; box-shadow:none; }
     /* Leaderboard / Team Simulation */
     #teamSimContainer{ display:flex; align-items:flex-start; gap:12px; margin:12px 0; }
-    #leaderboardPreview{ display:flex; gap:8px; align-items:center; }
     .leaderboard{ background:var(--card); border:1px solid var(--border); padding:10px; border-radius:12px; display:flex; flex-direction:column; gap:8px; min-width:260px; box-shadow:var(--shadow); }
     .leaderboard .row{ display:flex; justify-content:space-between; align-items:center; gap:12px; padding:6px 8px; border-radius:8px; }
     .leaderboard .name{ font-weight:800; font-size:13px; }
@@ -142,10 +141,19 @@
     .time-card{ grid-area:time; }
     .clinical-card{ grid-area:clinical; }
     .vitals-card{ grid-area:vitals; display:grid; gap:14px; }
-    .care-card{ grid-area:care; min-height:320px; display:flex; flex-direction:column; justify-content:center; }
-    .model-card{ grid-area:model; min-height:320px; display:flex; align-items:center; justify-content:center; font-weight:850; color:var(--muted); border-style:dashed; border-color:rgba(0,0,0,0.08); border-width:1px; letter-spacing:0.2px; position:relative; }
+    .care-card{ grid-area:care; min-height:320px; display:flex; flex-direction:column; justify-content:center; align-self:stretch; }
+    .model-card{ grid-area:model; min-height:320px; display:flex; align-items:center; justify-content:center; font-weight:850; color:var(--muted); border-style:dashed; border-color:rgba(0,0,0,0.08); border-width:1px; letter-spacing:0.2px; position:relative; align-self:stretch; height:100%; }
     .prediction-badge{ position:absolute; top:16px; left:16px; background:rgba(255,255,255,0.9); border:1px solid rgba(0,0,0,0.06); border-radius:12px; padding:10px 14px; font-weight:900; color:var(--text); box-shadow:0 12px 24px rgba(0,0,0,0.14); display:flex; align-items:center; gap:8px; }
     .prediction-badge .material-symbols-rounded{ font-size:20px; }
+    .notes-panel{ width:100%; display:flex; flex-direction:column; gap:12px; padding:58px 18px 18px; }
+    .notes-card{ background:rgba(255,255,255,0.92); border:1px solid rgba(0,0,0,0.06); border-radius:16px; padding:14px; box-shadow:0 14px 26px rgba(0,0,0,0.12); }
+    .notes-card h4{ margin:0 0 8px; font-size:15px; font-weight:800; }
+    .notes-meta{ display:grid; gap:6px; font-size:12px; color:var(--muted); font-weight:600; }
+    .notes-meta span{ display:flex; align-items:center; gap:6px; }
+    .notes-status{ display:flex; flex-wrap:wrap; gap:8px; }
+    .status-pill{ display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border-radius:999px; border:1px solid rgba(0,0,0,0.08); background:rgba(255,255,255,0.9); font-size:12px; font-weight:700; color:var(--text); }
+    .status-pill .material-symbols-rounded{ font-size:16px; }
+    .notes-empty{ font-size:13px; font-weight:700; color:var(--muted); }
     .bed-icon{ width:118px; height:118px; border-radius:999px; display:flex; align-items:center; justify-content:center; background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.95), rgba(255,255,255,0.7)); border:1px solid rgba(255,255,255,0.55); box-shadow:0 18px 34px rgba(0,0,0,0.18); }
     .bed-icon img{ width:86%; height:86%; object-fit:contain; opacity:0.98; }
     .wizard-meta{ display:flex; flex-direction:column; gap:6px; color:var(--muted); font-weight:600; font-size:16px; }
@@ -239,7 +247,7 @@
 
   <div id="teamSimContainer">
     <div id="teamControls" style="display:flex;align-items:center;gap:10px; padding-left:12px;">
-      <button class="btn" id="openTeamSim"><span class="material-symbols-rounded">groups</span> Team Simulator</button>
+      <button class="btn" id="openTeamSim"><span class="material-symbols-rounded">groups</span> Team Leaderboard</button>
     </div>
   </div>
   <div class="team-strip" id="doctorStrip"></div>
@@ -349,7 +357,26 @@
 
         <div class="shell model-card" id="modelFrame">
           <div class="prediction-badge" id="bedPrediction"><span class="material-symbols-rounded">psychology</span><span id="bedPredictionText">Waiting for model...</span></div>
-          <div>Embed trained model here (realtime vitals input)</div>
+          <div class="notes-panel">
+            <div class="notes-card">
+              <h4>Doctor notes</h4>
+              <div id="bedNotesText" class="notes-empty">No notes yet.</div>
+            </div>
+            <div class="notes-card">
+              <h4>Updates</h4>
+              <div class="notes-meta">
+                <span><span class="material-symbols-rounded">edit</span><span id="bedNotesUpdated">Updated: —</span></span>
+                <span><span class="material-symbols-rounded">done_all</span><span id="bedNotesDone">Done: —</span></span>
+              </div>
+            </div>
+            <div class="notes-card">
+              <h4>Orders</h4>
+              <div class="notes-status">
+                <span class="status-pill"><span class="material-symbols-rounded">radiology</span><span id="bedNotesRadiology">Radiology: —</span></span>
+                <span class="status-pill"><span class="material-symbols-rounded">science</span><span id="bedNotesLab">Lab test: —</span></span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -398,8 +425,14 @@
     </div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
   <script>
+    const supabaseClient = supabase.createClient(
+      "https://xkxcyimlqtsbsuvrakue.supabase.co",
+      "sb_publishable_6aU6EMUqEx0aA0yDlYQjhg_sxSubJe1"
+    );
+
     const stripEl = document.getElementById("strip");
     const topbarEl = document.querySelector(".topbar");
     const connText = document.getElementById("connText");
@@ -437,6 +470,17 @@
     const bedModalPane = document.getElementById("bedModalPane");
     const clearBedBtn = document.getElementById("clearBed");
     let selectedBed = "bed1";
+    const bedIdMap = { bed1: 1, bed2: 2, bed3: 3 };
+    const bedNotesMap = new Map();
+    const patientDbMap = new Map();
+    function normalizePatientId(pid){
+      if(pid === null || pid === undefined) return null;
+      if(typeof pid === "number") return pid;
+      const raw = String(pid).trim();
+      if(!raw) return null;
+      const digits = raw.match(/\d+/g)?.join("");
+      return digits ? Number(digits) : raw;
+    }
     const doctorStrip = document.getElementById("doctorStrip");
     const assignedStaffList = document.getElementById("assignedStaffList");
     const openStaffAssignBtn = document.getElementById("openStaffAssign");
@@ -446,6 +490,11 @@
     const staffModalAssigned = document.getElementById("staffModalAssigned");
     const staffModalDropzone = document.getElementById("staffModalDropzone");
     const bedPredictionText = document.getElementById("bedPredictionText");
+    const bedNotesText = document.getElementById("bedNotesText");
+    const bedNotesUpdated = document.getElementById("bedNotesUpdated");
+    const bedNotesDone = document.getElementById("bedNotesDone");
+    const bedNotesRadiology = document.getElementById("bedNotesRadiology");
+    const bedNotesLab = document.getElementById("bedNotesLab");
 
     let client = null;
     let manualDisconnect = false;
@@ -470,6 +519,7 @@
         temperature: null,
         assigned: false,
         prediction: "Waiting for model...",
+        predictionTs: null,
         background: "Bed1_Background.png",
         icon: "Bed1-Icon.png",
         label: "Bed 1"
@@ -488,6 +538,7 @@
         temperature: null,
         assigned: false,
         prediction: "Waiting for model...",
+        predictionTs: null,
         background: "Bed2_Background.png",
         icon: "Bed2-Icon.png",
         label: "Bed 2"
@@ -506,6 +557,7 @@
         temperature: null,
         assigned: false,
         prediction: "Waiting for model...",
+        predictionTs: null,
         background: "Bed3_Background.png",
         icon: "Bed3-Icon.png",
         label: "Bed 3"
@@ -522,13 +574,10 @@
       {name:"Rania", img:"RN_Rania.png", role:"Nurse"},
       {name:"Omar", img:"RN_Omar.png", role:"Nurse"},
     ];
-    // Team simulation statistics and assignment timestamps
     const teamStats = new Map(); // name -> {assignedCount, completedRemovals, totalAssignedMs, avgAssignedMs, score}
     const staffAssignmentMap = new Map(); // name -> {bed, assignedAt, counted}
-    // initialize stats
     doctorRoster.forEach(d => teamStats.set(d.name, { assignedCount:0, completedRemovals:0, totalAssignedMs:0, avgAssignedMs:0, score:0 }));
 
-    // scoring helpers (minutes-based)
     function computeTeamScore(stats, liveMs=0){
       const minutes = ((stats.totalAssignedMs || 0) + liveMs) / 60000;
       const timeScore = Math.min(60, Math.round(minutes * 2));
@@ -572,14 +621,7 @@
       const rem = s % 60;
       return `${m}m ${rem}s`;
     }
-
-    // UI update for leaderboard preview and modal
     function updateLeaderboardUI(){
-      // preview (small list)
-      // no inline preview — scores shown under each doctor card instead
-      // update mission fit metrics elsewhere
-
-      // full leaderboard
       const lb = document.getElementById('leaderboardFull');
       if(lb){
         const all = Array.from(teamStats.entries()).map(([name,st])=>{
@@ -592,8 +634,6 @@
           return `<div class="row"><div><div class="name">${a.name}</div><div class="metrics">Assigned: ${a.stats.assignedCount} • Avg: ${avg}</div></div><div class="score">${a.score}</div></div>`;
         }).join('');
       }
-
-      // metrics
       const totalAssignedEl = document.getElementById('totalAssigned');
       const avgAllEl = document.getElementById('avgResponseAll');
       if(totalAssignedEl){
@@ -605,13 +645,15 @@
         avgAllEl.textContent = totals.count ? formatDurationShort(totals.sum / totals.count) : '—';
       }
     }
-
-    // open/close handlers
     document.addEventListener('click', (e)=>{
       const target = e.target?.closest && e.target.closest('button');
       if(target && target.id === 'openTeamSim'){ const tm = document.getElementById('teamModal'); if(tm) tm.style.display='flex'; updateLeaderboardUI(); }
       if(target && target.id === 'closeTeamModal'){ const tm = document.getElementById('teamModal'); if(tm) tm.style.display='none'; }
-      if(target && target.id === 'resetTeamStats'){ teamStats.forEach((v,k)=> teamStats.set(k,{assignedCount:0,completedRemovals:0,totalAssignedMs:0,avgAssignedMs:0,score:0})); staffAssignmentMap.clear(); updateLeaderboardUI(); }
+      if(target && target.id === 'resetTeamStats'){
+        teamStats.forEach((v,k)=> teamStats.set(k,{assignedCount:0,completedRemovals:0,totalAssignedMs:0,avgAssignedMs:0,score:0}));
+        staffAssignmentMap.clear();
+        updateLeaderboardUI();
+      }
     });
     const staffBusyMap = new Map(); // name -> bedId
     let availablePatients = [];
@@ -669,11 +711,10 @@
       }
       refillSlotsFromQueue();
     }
-    function clearBedAssignment(bedId){
+    async function clearBedAssignment(bedId){
       const cfg = bedConfig[bedId];
       if(!cfg) return;
       const now = Date.now();
-      // compute assigned durations for any staff before clearing
       (cfg.assignedStaff || []).forEach((name)=>{
         finalizeStaffAssignment(name, bedId, now);
         if(staffBusyMap.get(name) === bedId) staffBusyMap.delete(name);
@@ -690,14 +731,132 @@
       cfg.temperature = null;
       cfg.assigned = false;
       cfg.prediction = "Waiting for model...";
+      cfg.predictionTs = null;
       cfg.assignedStaff = [];
       bedAssignmentMap.delete(bedId);
-      updateLeaderboardUI();
+      bedNotesMap.delete(bedId);
+      const bedNumber = bedIdMap[bedId];
+      if(bedNumber){
+        try{
+          await supabaseClient
+            .from("er_beds")
+            .update({ patient_id: 0 })
+            .eq("bed_id", bedNumber);
+        }catch(error){
+          console.warn("Supabase remove update failed", error);
+        }
+      }
+      await syncBedAssignment(bedId, 0, false);
       updateBedSnapshot();
       updateBedTileStatus();
       if(bedModal.style.display==="flex") renderBedWizard();
       buildDoctorStrip();
+      updateLeaderboardUI();
     }
+    async function syncBedAssignment(bedId, patientId, occupied){
+      const bedNumber = bedIdMap[bedId] || null;
+      if(!bedNumber) return;
+      const normalizedPid = normalizePatientId(patientId);
+      try{
+        const { data, error } = await supabaseClient
+          .from("er_beds")
+          .update({ patient_id: normalizedPid ?? 0 })
+          .eq("bed_id", bedNumber)
+          .select("bed_id");
+        if(error){
+          console.warn("Supabase bed update failed", error);
+          await supabaseClient
+            .from("er_beds")
+            .upsert({ bed_id: bedNumber, patient_id: normalizedPid ?? 0 }, { onConflict: "bed_id" });
+          return;
+        }
+        if(!data || data.length === 0){
+          await supabaseClient
+            .from("er_beds")
+            .insert({ bed_id: bedNumber, patient_id: normalizedPid });
+        }
+      }catch(error){
+        console.warn("Supabase bed sync failed", error);
+      }
+    }
+    function isBedDone(bedId){
+      return bedNotesMap.get(bedId)?.done === true;
+    }
+    async function fetchBedNotes(bedId){
+      const bedNumber = bedIdMap[bedId];
+      if(!bedNumber) return;
+      let query = supabaseClient
+        .from("updata")
+        .select("bed_id, up_data, done, doctor_updata_time, done_time, radiology, lab_test")
+        .order("doctor_updata_time", { ascending: false })
+        .limit(1)
+        .or(`bed_id.eq.${bedNumber},bed_id.eq.${String(bedNumber)}`);
+      const { data, error } = await query;
+      if(error){
+        console.warn("Supabase updata fetch failed", error);
+        return;
+      }
+      const row = Array.isArray(data) ? data[0] : null;
+      const noteText = row?.up_data || "";
+      bedNotesMap.set(bedId, {
+        noteText: noteText || "",
+        updatedAt: row?.doctor_updata_time || "—",
+        doneAt: row?.done_time || "—",
+        radiology: row?.radiology || "—",
+        lab: row?.lab_test || "—",
+        done: row?.done,
+      });
+      updateBedSnapshot();
+      updateBedTileStatus();
+      if(bedModal.style.display==="flex" && selectedBed===bedId){
+        renderBedNotes(bedId);
+        renderBedWizard();
+      }
+    }
+    async function fetchPatientFromDb(patientId){
+      if(!patientId) return;
+      const normalizedPid = normalizePatientId(patientId);
+      let query = supabaseClient
+        .from("patient")
+        .select("patient_id, patient_name, sex, age, chief_complain, injury, mental, pain, nrs_pain, time")
+        .limit(1);
+      if(normalizedPid !== null){
+        query = query.or(`patient_id.eq.${normalizedPid},patient_id.eq.${String(normalizedPid)},patient_id.eq.${patientId}`);
+      }else{
+        query = query.eq("patient_id", patientId);
+      }
+      const { data, error } = await query;
+      if(error){
+        console.warn("Supabase patient fetch failed", error);
+        return;
+      }
+      const row = Array.isArray(data) ? data[0] : null;
+      if(row){
+        patientDbMap.set(patientId, row);
+        if(normalizedPid !== null) patientDbMap.set(String(normalizedPid), row);
+        if(bedModal.style.display==="flex") renderBedWizard();
+      }
+    }
+    const supabaseChannel = supabaseClient
+      .channel("pulse-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "updata" },
+        (payload) => {
+          const bedNumber = Number(payload?.new?.bed_id);
+          const bedId = Object.keys(bedIdMap).find((key) => bedIdMap[key] === bedNumber);
+          if(bedId) fetchBedNotes(bedId);
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "patient" },
+        (payload) => {
+          const patientId = payload?.new?.patient_id;
+          if(patientId) fetchPatientFromDb(patientId);
+        }
+      )
+      .subscribe();
     function ingest(reading){ const {patient_id,hr,spo2,sbp,rr}=reading; if(!patient_id) return; const ts=reading.ts?Number(reading.ts):Date.now(); if(!patients.has(patient_id)){ patients.set(patient_id,{history:[],last:null,trend:null}); ensureSlot(patient_id); }
       if(!assignmentMap.has(patient_id)) assignmentMap.set(patient_id, ts);
       const p=patients.get(patient_id);
@@ -774,7 +933,9 @@
         const cfg = bedConfig[bedId];
         const pid = cfg?.patientId;
         const last = pid ? patients.get(pid)?.last : null;
-        const assigned = Boolean(cfg?.assigned);
+        const assigned = Boolean(cfg?.assigned) && !isBedDone(bedId);
+        const assignTs = bedAssignmentMap.get(bedId);
+        const now = Date.now();
         const displayName = `${assigned ? (cfg?.name || pid || "(patient)") : "(vacant)"} • ${cfg?.label || bedId}`;
         const painVal = (last?.pain ?? cfg?.pain);
         const injuryVal = (last?.injury ?? cfg?.injury);
@@ -782,27 +943,31 @@
         const injuryText = injuryVal === null ? "—" : injuryVal ? "Yes" : "No";
         const oxygenText = last?.oxygenSupport || cfg?.oxygenSupport || "—";
         return {
-          bedId,
+          bed_id: bedId,
           label: cfg?.label || bedId,
-          assigned,
-          patientId: pid || null,
+          occupied: assigned,
+          patient_id: assigned ? (pid || null) : null,
+          time_in_bed_seconds: assignTs ? Math.floor((now - assignTs) / 1000) : null,
           displayName,
           patientIdDisplay: assigned ? `Patient ID: ${pid || "—"}` : "Patient ID: —",
           name: assigned ? (cfg?.name || null) : null,
-          staff: Array.isArray(cfg?.assignedStaff) ? cfg.assignedStaff : [],
+          staff_assigned: assigned && Array.isArray(cfg?.assignedStaff) ? cfg.assignedStaff : [],
           complaint: assigned ? (cfg?.complaint || "—") : "—",
           diagnosis: assigned ? (cfg?.diagnosis || "—") : "—",
           pain: assigned ? painText : "—",
           injury: assigned ? injuryText : "—",
           oxygenSupport: assigned ? oxygenText : "—",
-          prediction: cfg?.prediction || null,
-          vitals: last
+          triage_rating_1_to_5: null,
+          prediction_text: cfg?.prediction || null,
+          prediction_ts_utc: cfg?.predictionTs || null,
+          vitals: assigned && last
             ? {
                 hr: Number.isFinite(last?.hr) ? last.hr : null,
                 spo2: Number.isFinite(last?.spo2) ? last.spo2 : null,
-                bp: Number.isFinite(last?.sbp) ? `${last?.sbp}/${last?.dbp ?? "–"}` : null,
+                sbp: Number.isFinite(last?.sbp) ? last.sbp : null,
+                dbp: Number.isFinite(last?.dbp) ? last.dbp : null,
                 rr: Number.isFinite(last?.rr) ? last.rr : null,
-                tempC: Number.isFinite(last?.tempC) ? last.tempC : null,
+                temp: Number.isFinite(last?.tempC) ? last.tempC : null,
               }
             : null,
         };
@@ -818,7 +983,7 @@
       beds.forEach((bedId)=>{
         const badge = bedStatusMap[bedId];
         if(!badge) return;
-        const occupied = Boolean(bedConfig[bedId]?.assigned);
+        const occupied = Boolean(bedConfig[bedId]?.assigned) && !isBedDone(bedId);
         badge.textContent = occupied ? "Occupied" : "Available";
         badge.classList.toggle("occupied", occupied);
         badge.classList.toggle("available", !occupied);
@@ -840,6 +1005,7 @@
     }
     function renderBedWizard(){
       const cfg=bedConfig[selectedBed] || bedConfig.bed1;
+      const displayAssigned = Boolean(cfg?.assigned) && !isBedDone(selectedBed);
       const pid=cfg.patientId;
       const p=pid ? patients.get(pid) : null;
       const last=p?.last;
@@ -852,23 +1018,26 @@
       const painText = painVal === null ? "—" : painVal ? "Yes" : "No";
       const injuryText = injuryVal === null ? "—" : injuryVal ? "Yes" : "No";
       const oxygenText = last?.oxygenSupport || cfg.oxygenSupport || "—";
-      bedPatientNameEl.textContent = `${cfg.assigned ? (cfg.name || pid || "(patient)") : "(vacant)"} • ${cfg.label}`;
-      bedPatientIdEl.textContent = `Patient ID: ${cfg.assigned ? (pid||"—") : "—"}`;
-      bedPatientGenderEl.textContent = `Gender: ${cfg.assigned ? (cfg.gender || "—") : "—"}`;
-      bedPatientAgeEl.textContent = `Age: ${cfg.assigned && cfg.age ? cfg.age : "—"}`;
-      bedComplaintEl.textContent = cfg.assigned && cfg.complaint ? cfg.complaint : "—";
-      bedDiagnosisEl.textContent = cfg.assigned && cfg.diagnosis ? cfg.diagnosis : "—";
-      bedPainEl.textContent = cfg.assigned ? painText : "—";
-      bedInjuryEl.textContent = cfg.assigned ? injuryText : "—";
-      bedOxygenEl.textContent = cfg.assigned ? oxygenText : "—";
+      const dbPatient = pid ? patientDbMap.get(pid) : null;
+      const displayName = displayAssigned ? (dbPatient?.patient_name || cfg.name || pid || "(patient)") : "(vacant)";
+      bedPatientNameEl.textContent = `${displayName} • ${cfg.label}`;
+      bedPatientIdEl.textContent = `Patient ID: ${displayAssigned ? (pid||"—") : "—"}`;
+      bedPatientGenderEl.textContent = `Gender: ${displayAssigned ? (dbPatient?.sex ?? cfg.gender ?? "—") : "—"}`;
+      bedPatientAgeEl.textContent = `Age: ${displayAssigned && (dbPatient?.age || cfg.age) ? (dbPatient?.age || cfg.age) : "—"}`;
+      bedComplaintEl.textContent = displayAssigned ? (dbPatient?.chief_complain || cfg.complaint || "—") : "—";
+      bedDiagnosisEl.textContent = displayAssigned ? (cfg.diagnosis || "—") : "—";
+      bedPainEl.textContent = displayAssigned ? painText : "—";
+      bedInjuryEl.textContent = displayAssigned ? injuryText : "—";
+      bedOxygenEl.textContent = displayAssigned ? oxygenText : "—";
       bedPredictionText.textContent = `Prediction: ${cfg.prediction}`;
-      renderAssignedStaffList(assignedStaffList, cfg.assignedStaff);
-      if(clearBedBtn) clearBedBtn.disabled = !cfg.assigned;
+      renderBedNotes(selectedBed);
+      renderAssignedStaffList(assignedStaffList, displayAssigned ? cfg.assignedStaff : []);
+      if(clearBedBtn) clearBedBtn.disabled = !displayAssigned;
       const assignTs = bedAssignmentMap.get(selectedBed);
       const now = Date.now();
-      bedTimeInEl.textContent = assignTs ? formatTimestamp(assignTs) : "—";
-      bedTimeTotalEl.textContent = assignTs ? formatDuration(now - assignTs) : "—";
-      bedVitalsEl.innerHTML = cfg.assigned ? `
+      bedTimeInEl.textContent = displayAssigned && assignTs ? formatTimestamp(assignTs) : "—";
+      bedTimeTotalEl.textContent = displayAssigned && assignTs ? formatDuration(now - assignTs) : "—";
+      bedVitalsEl.innerHTML = displayAssigned ? `
         ${vitalTile("HR", safeNum(last?.hr), tr.hr)}
         ${vitalTile("BP", bpText, tr.sbp)}
         ${vitalTile("SPO₂", safeNum(last?.spo2), tr.spo2)}
@@ -877,6 +1046,18 @@
       ` : `<div style="font-size:14px; color:var(--muted);">Bed 1 is vacant. Assign a patient to see vitals.</div>`;
       updateBedSnapshot();
       updateBedTileStatus();
+    }
+    function renderBedNotes(bedId){
+      const notes = bedNotesMap.get(bedId) || {};
+      const text = notes.noteText || "No notes yet.";
+      bedNotesText.textContent = text;
+      bedNotesText.classList.toggle("notes-empty", !notes.noteText);
+      bedNotesUpdated.textContent = `Updated: ${notes.updatedAt || "—"}`;
+      bedNotesDone.textContent = `Done: ${notes.doneAt || "—"}`;
+      const radiologyText = notes.radiology === false ? "No" : (notes.radiology || "—");
+      const labText = notes.lab === false ? "No" : (notes.lab || "—");
+      bedNotesRadiology.textContent = `Radiology: ${radiologyText}`;
+      bedNotesLab.textContent = `Lab test: ${labText}`;
     }
     function setStatus(state,text){
       connText.textContent=text;
@@ -919,6 +1100,8 @@
       const cfg = bedConfig[bedId];
       if(cfg?.background && bedModalPane) bedModalPane.style.backgroundImage = `url("${cfg.background}")`;
       if(cfg?.icon && bedIconImg) bedIconImg.src = cfg.icon;
+      if(cfg?.patientId) fetchPatientFromDb(cfg.patientId);
+      fetchBedNotes(bedId);
       updateAvailablePatients();
       buildDoctorStrip();
       if(staffModal && staffModal.style.display==="flex") buildStaffModal();
@@ -975,7 +1158,7 @@
     clearBedBtn?.addEventListener("click", ()=>{
       clearBedAssignment(selectedBed);
     });
-    setInterval(()=>{ if(bedModal.style.display==="flex") renderBedWizard(); }, 1000);
+    setInterval(()=>{ if(bedModal.style.display==="flex") renderBedWizard(); updateBedSnapshot(); }, 1000);
     clientInput.value = `sc-dashboard-${randomId()}`;
     defaultIds.forEach((id)=>ensureSlot(id));
     render();
@@ -989,7 +1172,6 @@
       const cfg = bedConfig[target];
       if(!cfg) return;
       if(!Array.isArray(cfg.assignedStaff)) cfg.assignedStaff = [];
-      if(cfg.assignedStaff.includes(name) && staffBusyMap.get(name) === target) return;
       const prevBed = staffBusyMap.get(name);
       const now = Date.now();
       if(prevBed && prevBed !== target){
@@ -1005,16 +1187,13 @@
       }
       if(!cfg.assignedStaff.includes(name)) cfg.assignedStaff.push(name);
       staffBusyMap.set(name, target);
-      // Only count as an assigned patient if the bed currently has a patient
       if(cfg.assigned){
         const stats = getTeamStats(name);
         stats.assignedCount = (stats.assignedCount || 0) + 1;
         stats.score = computeTeamScore(stats);
         teamStats.set(name, stats);
-        // record assignment timestamp for duration calculation
         staffAssignmentMap.set(name, { bed: target, assignedAt: now, counted: true });
-      } else {
-        // track assignment timestamp so later when patient arrives we can measure from patient assignment
+      }else{
         staffAssignmentMap.set(name, { bed: target, assignedAt: now, counted: false });
       }
       if(bedModal.style.display==="flex") renderBedWizard();
@@ -1028,18 +1207,13 @@
         const card = document.createElement("div");
         card.className = "team-card doctor-card";
         card.dataset.name = doc.name;
+        card.dataset.role = doc.role;
         card.title = doc.name;
         const busyBed = staffBusyMap.get(doc.name);
         const busyLabel = busyBed ? `Busy: ${bedConfig[busyBed]?.label || busyBed}` : "Available";
-        const stats = getTeamStats(doc.name);
-        const liveMs = getActiveAssignedMs(doc.name);
-        const score = computeTeamScore(stats, liveMs);
-        card.innerHTML = `
-          <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
-            <img src="${doc.img}" alt="${doc.name}" />
-            <div class="staff-badge ${busyBed ? "busy" : ""}" style="position:static;">${busyLabel}</div>
-            <div style="font-size:12px; color:var(--muted);">Pts: <b>${score}</b></div>
-          </div>`;
+        card.dataset.status = busyBed ? "Busy" : "Available";
+        card.dataset.bed = busyBed ? (bedConfig[busyBed]?.label || busyBed) : "";
+        card.innerHTML = `<img src="${doc.img}" alt="${doc.name}" /><div class="staff-badge ${busyBed ? "busy" : ""}">${busyLabel}</div>`;
         card.draggable = true;
         card.addEventListener("dragstart", (e)=>{
           e.dataTransfer.setData("text/staff", doc.name);
@@ -1047,7 +1221,6 @@
         });
         doctorStrip.appendChild(card);
       });
-      updateLeaderboardUI();
     }
     function buildStaffModal(){
       if(!staffModal) return;
@@ -1062,11 +1235,7 @@
           card.title = doc.name;
           const busyBed = staffBusyMap.get(doc.name);
           const busyLabel = busyBed ? `Busy: ${bedConfig[busyBed]?.label || busyBed}` : "Available";
-          card.innerHTML = `
-            <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
-              <img src="${doc.img}" alt="${doc.name}" />
-              <div class="staff-badge ${busyBed ? "busy" : ""}" style="position:static;">${busyLabel}</div>
-            </div>`;
+          card.innerHTML = `<img src="${doc.img}" alt="${doc.name}" /><div class="staff-badge ${busyBed ? "busy" : ""}">${busyLabel}</div>`;
           card.draggable = true;
           card.addEventListener("dragstart", (e)=>{
             e.dataTransfer.setData("text/staff", doc.name);
@@ -1097,6 +1266,7 @@
       cfg.assigned = true;
       cfg.age = p?.last?.age ?? null;
       cfg.gender = p?.last?.gender ?? null;
+      cfg.predictionTs = null;
       bedAssignmentMap.set(target, now);
       (cfg.assignedStaff || []).forEach((name)=>{
         const entry = staffAssignmentMap.get(name);
@@ -1110,6 +1280,9 @@
       removeFromWaiting(pid);
       ensureSlot(pid);
       lastPredictionTs[target] = 0; // force immediate prediction on next loop
+      syncBedAssignment(target, pid, true);
+      fetchPatientFromDb(pid);
+      fetchBedNotes(target);
       renderBedWizard();
       buildDoctorStrip();
       updateLeaderboardUI();
@@ -1155,14 +1328,17 @@
         const result = await client.predict(TRIAGE_ENDPOINT, payload);
         const text = Array.isArray(result?.data) ? result.data[0] : result?.data || "Pending";
         bedConfig[bedId].prediction = text || "Pending";
+        bedConfig[bedId].predictionTs = new Date(now).toISOString();
         if(bedModal.style.display==="flex" && selectedBed===bedId) renderBedWizard();
       }catch(err){
         console.warn("Prediction error", err);
         bedConfig[bedId].prediction = "Prediction error";
+        bedConfig[bedId].predictionTs = new Date(now).toISOString();
       }
     }
     setInterval(()=>{ beds.forEach(runTriagePrediction); }, PREDICT_INTERVAL_MS);
     buildDoctorStrip();
+    updateLeaderboardUI();
   </script>
 </body>
 </html>
